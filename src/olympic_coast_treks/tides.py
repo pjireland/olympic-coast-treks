@@ -1,7 +1,7 @@
 """Functionality for fetching tide information."""
 
 import os
-from datetime import date, timedelta
+from datetime import date
 
 import diskcache
 import polars as pl
@@ -18,12 +18,14 @@ tide_cache = diskcache.Cache(
 def is_light(ts: pl.Series) -> pl.Series:
     """Is it light outside during the input timestamps?
 
-    Here, light is defined as being between sunrise and sunset.
+    Here, light is defined as being between sunrise and sunset. For efficiency,
+    it is required that the input data all is on the same day.
 
     Parameters
     ----------
     ts : Series
-        Polars Series of timestamps in local (Pacific) time.
+        Polars Series of timestamps in local (Pacific) time. All timestamps are
+        expected to fall on the same day.
 
     Returns
     -------
@@ -31,6 +33,10 @@ def is_light(ts: pl.Series) -> pl.Series:
         Polars Series indicating if it is light (``True``) or dark (``False``)
         at each of the provided timestamps.
     """
+    if ts.is_empty():
+        return pl.Series("is_light", [], dtype=pl.Boolean)
+    if ts.min().date() != ts.max().date():
+        raise ValueError("All timestamps in ``ts`` should be on the same day")
     city = LocationInfo(
         "La Push", "USA", "America/Los_Angeles", 47.9053, -124.626
     )
@@ -64,11 +70,12 @@ def get_tide_levels(day: date) -> pl.DataFrame:
         * ``is_light``: bool
             Whether or not it is light outside at the specified time.
     """
+    str_date = day.strftime("%Y%m%d")
     tides_resp = requests.get(
         "https://api.tidesandcurrents.noaa.gov/api/prod/datagetter",
         params=dict(
-            begin_date=day.strftime("%Y%m%d"),
-            end_date=(day + timedelta(days=1)).strftime("%Y%m%d"),
+            begin_date=str_date,
+            end_date=str_date,
             product="predictions",
             datum="MLLW",
             units="english",
@@ -83,7 +90,10 @@ def get_tide_levels(day: date) -> pl.DataFrame:
             "Error getting tide information, status code: "
             f"{tides_resp.status_code}"
         )
-    df = pl.DataFrame(tides_resp.json()["predictions"])
+    tides_resp = tides_resp.json()
+    if tides_resp.get("error", None) is not None:
+        raise ValueError(tides_resp["error"]["message"])
+    df = pl.DataFrame(tides_resp["predictions"])
     df = df.select(
         [
             pl.col("t").str.to_datetime().alias("timestamp"),
