@@ -6,8 +6,8 @@ from typing import Literal
 
 import polars as pl
 
-from data import LOCATIONS, RESTRICTIONS
-from tides import get_tide_levels
+from .data import LOCATIONS, RESTRICTIONS
+from .tides import get_tide_levels
 
 
 def calc_routes(
@@ -193,16 +193,14 @@ def analyze_route_on_day(
     Returns
     -------
     DataFrame
-        Polars DataFrame. If no possible route is found on a given day, an
-        empty DataFrame will be returned. Otherwise, a DataFrame will be
-        returned with the following columns:
-        * ``start_time`` : datetime
-            Possible start times for the hike that day.
-        * ``end_time`` : datetime
-            Possible end times for the hike that day.
-        * ``possible_without_headland`` : bool
-            Whether it is possible to hike the route at the given time without
-            using headland alternative routes.
+        Polars DataFrame. A DataFrame of possible start and end time intervals.
+        For each row, travel is possible if it starts between the values
+        in the ``first_possible_start`` and the ``last_possible_start``
+        columns. The corresponding end times are given by the
+        ``first_possible_end`` and ``last_possible_end`` columns based on the
+        input speed. The start location, end location, and date are also
+        included as the ``start_location``, ``end_location``, and ``date``
+        columns, respectively.
     """
     tides = get_tide_levels(day=day).filter(pl.col("is_light"))
     start_id = (
@@ -218,10 +216,10 @@ def analyze_route_on_day(
         (pl.col("end_miles") >= first_distance)
         & (pl.col("start_miles") <= last_distance)
     ).with_columns(
-        ((pl.col("start_miles") - first_distance) * speed).alias(
+        ((pl.col("start_miles") - first_distance) / speed).alias(
             "start_travel_time_hr"
         ),
-        ((pl.col("end_miles") - first_distance) * speed).alias(
+        ((pl.col("end_miles") - first_distance) / speed).alias(
             "end_travel_time_hr"
         ),
     )
@@ -236,9 +234,7 @@ def analyze_route_on_day(
             tides["timestamp"].is_between(start_time, end_time)
         ).with_columns(
             (
-                (pl.col("timestamp") - start_time).dt.total_minutes()
-                / 60
-                * speed
+                (pl.col("timestamp") - start_time).dt.total_minutes() / 60.0
             ).alias("travel_time_hr")
         )
         tides_and_restrictions = (
@@ -279,9 +275,19 @@ def analyze_route_on_day(
                 "passable": tides_and_restrictions["passable"].all(),
             }
         )
-    possible_times = pl.DataFrame(possible_times)
-    if possible_times.is_empty():
-        return possible_times
+    if not possible_times:
+        return pl.DataFrame(
+            [],
+            schema={
+                "first_possible_start": datetime,
+                "last_possible_start": datetime,
+                "first_possible_end": datetime,
+                "last_possible_end": datetime,
+                "start_location": str,
+                "end_location": str,
+                "date": date,
+            },
+        )
     possible_times = (
         pl.DataFrame(possible_times)
         .with_columns(pl.col("passable").rle_id().alias("run_id"))
@@ -387,7 +393,7 @@ def get_restrictions(
             pl.exclude(["start_miles", "end_miles"]),
             (max_distance - pl.col("start_miles")).alias("end_miles"),
             (max_distance - pl.col("end_miles")).alias("start_miles"),
-        )
+        ).sort("start_miles")
     return restrictions
 
 
@@ -417,6 +423,16 @@ def calc_possible_campsites(
     """
     if nights < 1:
         raise ValueError("``nights`` must be at least 1")
+    if min_daily_distance <= 0 or max_daily_distance <= 0:
+        raise ValueError(
+            "``min_daily_distance`` and ``max_daily_distance`` must both be "
+            "positive"
+        )
+    if min_daily_distance > max_daily_distance:
+        raise ValueError(
+            "``min_daily_distance`` must be greater than "
+            "``max_daily_distance``"
+        )
     campsite_combinations = list(
         itertools.combinations(
             locations.filter(pl.col("campsite"))["name"], nights
