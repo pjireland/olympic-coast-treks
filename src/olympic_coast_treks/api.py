@@ -7,7 +7,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
-from process import calc_routes
+from .process import calc_routes
 
 app = FastAPI(title="Olympic Route Planner API")
 app.add_middleware(
@@ -37,13 +37,14 @@ def get_health():
 
 @app.get("/routes")
 def get_routes(
-    section: Literal["south"],
+    section: Literal["south", "middle", "north"],
     direction: Literal["north", "south"],
     start_date: date,
     end_date: date,
-    min_daiy_distance: float = 3.0,
+    min_daily_distance: float = 3.0,
     max_daily_distance: float = 10.0,
     speed: float = 1.0,
+    min_buffer: float = 2.0,
 ) -> list[Route]:
     try:
         routes = calc_routes(
@@ -51,9 +52,10 @@ def get_routes(
             end_date=end_date,
             section=section,
             direction=direction,
-            min_daily_distance=min_daiy_distance,
+            min_daily_distance=min_daily_distance,
             max_daily_distance=max_daily_distance,
             speed=speed,
+            min_buffer=min_buffer,
         )
     except ValueError as e:
         raise HTTPException(400, str(e))

@@ -72,11 +72,6 @@ def calc_routes(
         * ``last_possible_end`` : datetime
             The last possible ending time within a given window.
     """
-    if max_daily_distance < min_daily_distance:
-        raise ValueError(
-            "The maximum daily distance is less than the minimum daily "
-            "distance"
-        )
     if speed <= 0:
         raise ValueError("The hiking speed must be a positive number")
     if direction not in ["north", "south"]:
