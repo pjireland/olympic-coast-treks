@@ -72,11 +72,6 @@ def calc_routes(
         * ``last_possible_end`` : datetime
             The last possible ending time within a given window.
     """
-    if max_daily_distance < min_daily_distance:
-        raise ValueError(
-            "The maximum daily distance is less than the minimum daily "
-            "distance"
-        )
     if speed <= 0:
         raise ValueError("The hiking speed must be a positive number")
     if direction not in ["north", "south"]:
@@ -456,26 +451,3 @@ def calc_possible_campsites(
         ).all():
             valid_campsites.append(campsites)
     return valid_campsites
-
-
-if __name__ == "__main__":
-    # print(
-    #     calc_routes(
-    #         start_date=date(2023, 5, 26),
-    #         end_date=date(2023, 5, 29),
-    #         section="middle",
-    #         direction="south",
-    #         min_daily_distance=3,
-    #         max_daily_distance=10,
-    #     )
-    # )
-    print(
-        calc_routes(
-            start_date=date(2024, 4, 13),
-            end_date=date(2024, 4, 15),
-            section="north",
-            direction="north",
-            min_daily_distance=3,
-            max_daily_distance=10,
-        )
-    )
