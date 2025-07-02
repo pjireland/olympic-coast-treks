@@ -451,26 +451,3 @@ def calc_possible_campsites(
         ).all():
             valid_campsites.append(campsites)
     return valid_campsites
-
-
-if __name__ == "__main__":
-    # print(
-    #     calc_routes(
-    #         start_date=date(2023, 5, 26),
-    #         end_date=date(2023, 5, 29),
-    #         section="middle",
-    #         direction="south",
-    #         min_daily_distance=3,
-    #         max_daily_distance=10,
-    #     )
-    # )
-    print(
-        calc_routes(
-            start_date=date(2024, 4, 13),
-            end_date=date(2024, 4, 15),
-            section="north",
-            direction="north",
-            min_daily_distance=3,
-            max_daily_distance=10,
-        )
-    )
