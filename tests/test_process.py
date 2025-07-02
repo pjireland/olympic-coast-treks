@@ -3,16 +3,22 @@
 from datetime import date, datetime
 
 import pytest
+import polars as pl
 
 from olympic_coast_treks.process import (
     analyze_route_on_day,
     calc_possible_campsites,
+    calc_routes,
     get_locations,
     get_restrictions,
 )
 
 
 def test_get_locations():
+    with pytest.raises(ValueError):
+        get_locations(section="asdf", direction="south")
+    with pytest.raises(ValueError):
+        get_locations(section="south", direction="asdf")
     for section in ["south", "middle", "north"]:
         res = {}
         for direction in ["south", "north"]:
@@ -41,6 +47,10 @@ def test_get_locations():
 
 
 def test_get_restrictions():
+    with pytest.raises(ValueError):
+        get_restrictions(section="asdf", direction="south")
+    with pytest.raises(ValueError):
+        get_restrictions(section="south", direction="asdf")
     for section in ["south", "middle", "north"]:
         res = {}
         for direction in ["south", "north"]:
@@ -161,3 +171,178 @@ def test_analyze_route_on_day():
     assert res["last_possible_start"][1] == datetime(
         year=2022, month=9, day=9, hour=16, minute=36
     )
+
+
+def test_calc_routes():
+    # This is a route I've done, so I know it works
+    res = calc_routes(
+        start_date=date(year=2024, month=4, day=13),
+        end_date=date(year=2024, month=4, day=15),
+        section="north",
+        direction="north",
+        speed=1.0,
+        min_buffer=0.0,
+        min_daily_distance=3,
+        max_daily_distance=10,
+    )
+    # Always must start from Ozette TH
+    assert list(
+        res.group_by("campsite_combination").first()["start_location"].unique()
+    ) == ["Ozette Trailhead"]
+    # Always must end at Hatchery Road
+    assert list(
+        res.group_by("campsite_combination").last()["end_location"].unique()
+    ) == ["Hatchery Road"]
+    # Always must take 3 days
+    assert list(
+        res.group_by("campsite_combination")
+        .agg(pl.col("date").n_unique().alias("unique_count"))["unique_count"]
+        .unique()
+    ) == [3]
+    # Must always start where we ended the previous day
+    assert list(
+        res.unique(
+            subset=[
+                "campsite_combination",
+                "date",
+                "start_location",
+                "end_location",
+            ]
+        )
+        .sort(["campsite_combination", "date"])
+        .group_by("campsite_combination")
+        .agg(
+            [
+                pl.col("*"),
+                (pl.col("end_location") == pl.col("start_location").shift(-1))
+                .drop_nulls()
+                .all()
+                .alias("start_where_ended"),
+            ]
+        )["start_where_ended"]
+        .unique()
+    ) == [True]
+    # Check that a route I did previously shows as a potential one
+    assert (
+        len(
+            res.filter(
+                (pl.col("start_location") == "Ozette Trailhead")
+                & (pl.col("end_location") == "Seafield Creek")
+                & (pl.col("date") == date(year=2024, month=4, day=13))
+            )
+        )
+        > 0
+    )
+    assert (
+        len(
+            res.filter(
+                (pl.col("start_location") == "Seafield Creek")
+                & (pl.col("end_location") == "Point of Arches")
+                & (pl.col("date") == date(year=2024, month=4, day=14))
+            )
+        )
+        > 0
+    )
+    assert (
+        len(
+            res.filter(
+                (pl.col("start_location") == "Point of Arches")
+                & (pl.col("end_location") == "Hatchery Road")
+                & (pl.col("date") == date(year=2024, month=4, day=15))
+            )
+        )
+        > 0
+    )
+    # Regression test to make sure the route information stays constant
+    assert len(res) == 27
+    # This is another route I've done, so I know it works
+    res = calc_routes(
+        start_date=date(year=2023, month=5, day=26),
+        end_date=date(year=2023, month=5, day=29),
+        section="middle",
+        direction="south",
+        speed=1.0,
+        min_buffer=0.0,
+        min_daily_distance=3,
+        max_daily_distance=10,
+    )
+    # Always must start from Ozette TH
+    assert list(
+        res.group_by("campsite_combination").first()["start_location"].unique()
+    ) == ["Ozette Trailhead"]
+    # Always must end at Hatchery Road
+    assert list(
+        res.group_by("campsite_combination").last()["end_location"].unique()
+    ) == ["Rialto Beach"]
+    # Always must take 4 days
+    assert list(
+        res.group_by("campsite_combination")
+        .agg(pl.col("date").n_unique().alias("unique_count"))["unique_count"]
+        .unique()
+    ) == [4]
+    # Must always start where we ended the previous day
+    assert list(
+        res.unique(
+            subset=[
+                "campsite_combination",
+                "date",
+                "start_location",
+                "end_location",
+            ]
+        )
+        .sort(["campsite_combination", "date"])
+        .group_by("campsite_combination")
+        .agg(
+            [
+                pl.col("*"),
+                (pl.col("end_location") == pl.col("start_location").shift(-1))
+                .drop_nulls()
+                .all()
+                .alias("start_where_ended"),
+            ]
+        )["start_where_ended"]
+        .unique()
+    ) == [True]
+    # Check that a route I did previously shows as a potential one
+    assert (
+        len(
+            res.filter(
+                (pl.col("start_location") == "Ozette Trailhead")
+                & (pl.col("end_location") == "Yellow Banks")
+                & (pl.col("date") == date(year=2023, month=5, day=26))
+            )
+        )
+        > 0
+    )
+    assert (
+        len(
+            res.filter(
+                (pl.col("start_location") == "Yellow Banks")
+                & (pl.col("end_location") == "Cedar Creek")
+                & (pl.col("date") == date(year=2023, month=5, day=27))
+            )
+        )
+        > 0
+    )
+    assert (
+        len(
+            res.filter(
+                (pl.col("start_location") == "Cedar Creek")
+                & (pl.col("end_location") == "Chilean Memorial")
+                & (pl.col("date") == date(year=2023, month=5, day=28))
+            )
+        )
+        > 0
+    )
+    assert (
+        len(
+            res.filter(
+                (pl.col("start_location") == "Chilean Memorial")
+                & (pl.col("end_location") == "Rialto Beach")
+                & (pl.col("date") == date(year=2023, month=5, day=29))
+            )
+        )
+        > 0
+    )
+    # Regression test to make sure the route information stays constant
+    assert len(res) == 30

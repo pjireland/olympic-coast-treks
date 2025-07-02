@@ -297,7 +297,7 @@ LOCATIONS["north"] = [
     {
         "name": "Point of Arches",
         "distance_miles": 11.3,
-        "campsite": False,
+        "campsite": True,
         "trailhead": False,
     },
     {
