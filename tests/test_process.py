@@ -5,9 +5,13 @@ from datetime import date, datetime
 import polars as pl
 import pytest
 
-from olympic_coast_treks.process import (analyze_route_on_day,
-                                         calc_possible_campsites, calc_routes,
-                                         get_locations, get_restrictions)
+from olympic_coast_treks.process import (
+    analyze_route_on_day,
+    calc_possible_campsites,
+    calc_routes,
+    get_locations,
+    get_restrictions,
+)
 
 
 def test_get_locations():
