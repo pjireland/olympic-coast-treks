@@ -333,7 +333,7 @@ def get_locations(
     if section not in LOCATIONS:
         raise ValueError(f"``section`` must be in {list(LOCATIONS.keys())}")
     if direction not in ["south", "north"]:
-        raise ValueError(f"``direction`` must be 'north' or 'south'")
+        raise ValueError("``direction`` must be 'north' or 'south'")
     locations = pl.DataFrame(LOCATIONS[section])
     # Distances are given from south to north
     # Reverse these if traveling north to south
@@ -380,7 +380,7 @@ def get_restrictions(
     if section not in RESTRICTIONS:
         raise ValueError(f"``section`` must be in {list(RESTRICTIONS.keys())}")
     if direction not in ["south", "north"]:
-        raise ValueError(f"``direction`` must be 'north' or 'south'")
+        raise ValueError("``direction`` must be 'north' or 'south'")
     restrictions = pl.DataFrame(RESTRICTIONS[section])
     # Restrictions are given from south to north
     # Reverse these if traveling north to south

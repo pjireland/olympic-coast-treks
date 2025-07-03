@@ -42,8 +42,9 @@ def is_light(ts: pl.Series) -> pl.Series:
     )
     pacific_tz = pytz.timezone("America/Los_Angeles")
     s = sun(city.observer, date=ts.min().date(), tzinfo=pacific_tz)
-    sunrise, sunset = s["sunrise"].replace(tzinfo=None), s["sunset"].replace(
-        tzinfo=None
+    sunrise, sunset = (
+        s["sunrise"].replace(tzinfo=None),
+        s["sunset"].replace(tzinfo=None),
     )
     return ((ts >= sunrise) & (ts <= sunset)).alias("is_light")
 

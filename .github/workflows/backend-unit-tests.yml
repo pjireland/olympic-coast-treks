@@ -1,4 +1,4 @@
-name: Backend Tests
+name: Backend
 
 on:
   push:
@@ -11,7 +11,7 @@ on:
       - 'backend/**'
 
 jobs:
-  pytest:
+  test:
     runs-on: ubuntu-latest
 
     defaults:
@@ -30,5 +30,11 @@ jobs:
     - name: Install dependencies
       run: uv sync --all-extras --dev
 
-    - name: Run tests with pytest
+    - name: Run ruff linting
+      run: uv run ruff check .
+
+    - name: Run ruff formatting
+      run: uv run ruff format --check --diff .
+
+    - name: Run pytest
       run: uv run pytest -v
