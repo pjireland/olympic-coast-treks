@@ -19,6 +19,35 @@ Refer to the software license for information about use and liability.
 
 The simplest approach for planning routes is through the web interface (TODO).
 
-## Installing the package
+## Backend development
 
-TODO
+We recommend using [`uv`](https://docs.astral.sh/uv/).
+
+### Clone the package locally
+
+```bash
+git clone https://github.com/pjireland/olympic-coast-treks.git
+```
+
+Then navigate to the `backend` subdirectory within `olympic-coast-treks`.
+
+### Set up environment
+
+From within the `backend` subdirectory:
+```bash
+uv sync
+```
+
+### Run unit tests
+
+From within the `backend` subdirectory:
+```bash
+make test
+```
+
+### Run style checks and fixes
+
+From within the `backend` subdirectory:
+```bash
+make style
+```
