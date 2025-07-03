@@ -9,8 +9,12 @@ import pytz
 import requests
 from astral import LocationInfo
 from astral.sun import sun
-from tenacity import (retry, retry_if_exception_type, stop_after_attempt,
-                      wait_exponential)
+from tenacity import (
+    retry,
+    retry_if_exception_type,
+    stop_after_attempt,
+    wait_exponential,
+)
 
 tide_cache = diskcache.Cache(
     os.path.join(os.path.expanduser("~"), ".tide-cache")
@@ -81,7 +85,7 @@ def _get_tides_from_api(day: date) -> requests.Response:
     )
 
 
-# @tide_cache.memoize(expire=86_400)
+@tide_cache.memoize(expire=86_400)
 def get_tide_levels(day: date) -> pl.DataFrame:
     """Get tide levels on a given data using the NOAA API.
 
