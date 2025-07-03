@@ -1,4 +1,4 @@
-"""API for route planner."""
+"""API for Olympic Coast Treks."""
 
 from datetime import date, datetime
 from typing import Literal
@@ -9,7 +9,7 @@ from pydantic import BaseModel
 
 from .process import calc_routes
 
-app = FastAPI(title="Olympic Route Planner API")
+app = FastAPI(title="Olympic Coast Treks API")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost", "http://localhost:8080"],
