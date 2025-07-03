@@ -46,6 +46,58 @@ def get_routes(
     speed: float = 1.0,
     min_buffer: float = 2.0,
 ) -> list[Route]:
+    """Get possible routes.
+
+    Parameters
+    ----------
+    start_date : str
+        The first start date to consider.
+    end_date : str
+        The last end date to consider.
+    section : {'south', 'middle', 'north'}
+        The section of the coast to hike. 'south' is the south coast, 'middle'
+        is the south section of the north coast, and 'north' is the north
+        section of the north coast.
+    direction : {'north', 'south'}
+        The direction of travel.
+    min_daily_distance : float
+        The minimum distance to hike in a day in miles.
+    max_daily_distance : float
+        The maximum distance to hike in a day in miles. ``10`` miles is
+        typically the maximum recommended distance in a day given the rocky
+        terrain along the coast.
+    speed : float
+        The hiking speed (in miles per hour). ``1`` mile per hour is a
+        reasonable expectation given the rocky terrain along the coast.
+    min_buffer : float
+        The minimum allowable buffer in feet between the tidal restriction and
+        the tide level. Because tide predictions are imprecise, it is
+        recommended to use a value of ``2`` feet or more.
+
+    Returns
+    -------
+    list[dict]
+        Each list element indicates a time window where travel is
+        possible between two locations. The keys are as follows:
+        * ``campsite_combination`` : int
+            Unique identifier for a possible combination of campsites. Any
+            selected route must all have the same value of
+            ``campsite_combination``.
+        * ``date`` : date
+            The date for a given day in the trip.
+        * ``start_location`` : str
+            The start location for a given day in the trip.
+        * ``end_location`` : str
+            The end location for a given day in the trip.
+        * ``first_possible_start`` : datetime
+            The first possible starting time within a given window.
+        * ``last_possible_start`` : datetime
+            The last possible starting time within a given window.
+        * ``first_possible_end`` : datetime
+            The first possible ending time within a given window.
+        * ``last_possible_end`` : datetime
+            The last possible ending time within a given window.
+    """
     try:
         routes = calc_routes(
             start_date=start_date,
