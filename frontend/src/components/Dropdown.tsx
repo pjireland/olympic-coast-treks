@@ -58,7 +58,7 @@ export default function Dropdown({ label, onSelect }: DropdownProps) {
 
     return (
         <div className="mb-6">
-            <label className="block text-m font-semibold text-gray-700 mb-2 text-left">
+            <label className="block text-m font-semibold text-gray-700 mb-2">
                 Start and end location:
             </label>
             <select
