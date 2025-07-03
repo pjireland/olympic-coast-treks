@@ -1,7 +1,7 @@
 .PHONY: test style api
 
 style:
-	uv run ruff check . && uv run ruff format --check --diff .
+	uv run ruff check . && uv run ruff format .
 
 test:
 	uv run pytest -v
