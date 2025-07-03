@@ -9,6 +9,12 @@ import pytz
 import requests
 from astral import LocationInfo
 from astral.sun import sun
+from tenacity import (
+    retry,
+    retry_if_exception_type,
+    stop_after_attempt,
+    wait_exponential,
+)
 
 tide_cache = diskcache.Cache(
     os.path.join(os.path.expanduser("~"), ".tide-cache")
@@ -49,6 +55,36 @@ def is_light(ts: pl.Series) -> pl.Series:
     return ((ts >= sunrise) & (ts <= sunset)).alias("is_light")
 
 
+@retry(
+    stop=stop_after_attempt(3),
+    wait=wait_exponential(multiplier=1, min=1, max=10),
+    retry=retry_if_exception_type(
+        (
+            requests.exceptions.ConnectionError,
+            requests.exceptions.Timeout,
+            requests.exceptions.HTTPError,
+        )
+    ),
+)
+def _get_tides_from_api(day: date) -> requests.Response:
+    """Call the NOAA API to get tide data."""
+    str_date = day.strftime("%Y%m%d")
+    return requests.get(
+        "https://api.tidesandcurrents.noaa.gov/api/prod/datagetter",
+        params=dict(
+            begin_date=str_date,
+            end_date=str_date,
+            product="predictions",
+            datum="MLLW",
+            units="english",
+            time_zone="lst_ldt",
+            # La Push station
+            station="9442396",
+            format="json",
+        ),
+    )
+
+
 @tide_cache.memoize(expire=86_400)
 def get_tide_levels(day: date) -> pl.DataFrame:
     """Get tide levels on a given data using the NOAA API.
@@ -71,21 +107,7 @@ def get_tide_levels(day: date) -> pl.DataFrame:
         * ``is_light``: bool
             Whether or not it is light outside at the specified time.
     """
-    str_date = day.strftime("%Y%m%d")
-    tides_resp = requests.get(
-        "https://api.tidesandcurrents.noaa.gov/api/prod/datagetter",
-        params=dict(
-            begin_date=str_date,
-            end_date=str_date,
-            product="predictions",
-            datum="MLLW",
-            units="english",
-            time_zone="lst_ldt",
-            # La Push station
-            station="9442396",
-            format="json",
-        ),
-    )
+    tides_resp = _get_tides_from_api(day)
     if tides_resp.status_code != 200:
         raise ValueError(
             "Error getting tide information, status code: "
