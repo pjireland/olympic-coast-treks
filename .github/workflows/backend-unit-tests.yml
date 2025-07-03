@@ -1,4 +1,4 @@
-name: Backend Tests
+name: Backend
 
 on:
   push:
@@ -29,6 +29,12 @@ jobs:
 
     - name: Install dependencies
       run: uv sync --all-extras --dev
+
+    - name: Run linting
+      run: |
+        uv run ruff check .
+        uv run ruff format --check .
+      continue-on-error: true
 
     - name: Run tests with pytest
       run: uv run pytest -v
