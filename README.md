@@ -51,3 +51,12 @@ From within the `backend` subdirectory:
 ```bash
 make style
 ```
+
+### Starting a local API
+
+From within the `backend` subdirectory:
+```bash
+make api
+```
+
+API docs can be then be accessed via http://localhost:8000/docs.
