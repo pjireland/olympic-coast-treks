@@ -1,10 +1,16 @@
-const DateRangePicker = ({ startDate, setStartDate, endDate, setEndDate }) => {
+interface DateRangePickerProps {
+    startDate: string;
+    setStartDate: (date: string) => void;
+    endDate: string;
+    setEndDate: (date: string) => void;
+}
+
+const DateRangePicker = ({ startDate, setStartDate, endDate, setEndDate }: DateRangePickerProps) => {
 
     // Get today's date in YYYY-MM-DD format
     const today = new Date().toISOString().split('T')[0];
 
-    // Calculate max end date (1 week from start date)
-    const getMaxEndDate = (startDateValue) => {
+    const getMaxEndDate = (startDateValue: string): string => {
         if (!startDateValue) return '';
 
         const start = new Date(startDateValue);
@@ -13,8 +19,7 @@ const DateRangePicker = ({ startDate, setStartDate, endDate, setEndDate }) => {
         return maxEnd.toISOString().split('T')[0];
     };
 
-    // Calculate min end date (1 day after start date)
-    const getMinEndDate = (startDateValue) => {
+    const getMinEndDate = (startDateValue: string): string => {
         if (!startDateValue) return '';
 
         const start = new Date(startDateValue);
@@ -23,7 +28,7 @@ const DateRangePicker = ({ startDate, setStartDate, endDate, setEndDate }) => {
         return minEnd.toISOString().split('T')[0];
     };
 
-    const handleStartDateChange = (e) => {
+    const handleStartDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const newStartDate = e.target.value;
         setStartDate(newStartDate);
 
@@ -39,7 +44,7 @@ const DateRangePicker = ({ startDate, setStartDate, endDate, setEndDate }) => {
         }
     };
 
-    const handleEndDateChange = (e) => {
+    const handleEndDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const newEndDate = e.target.value;
         setEndDate(newEndDate);
     };
