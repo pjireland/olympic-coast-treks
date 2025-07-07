@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 type Option = {
     label: string;
@@ -7,11 +7,12 @@ type Option = {
 };
 
 interface DropdownProps {
-    label: string;
     onSelect?: (direction: string, section: string) => void;
+    initialDirection?: string;
+    initialSection?: string;
 }
 
-export default function Dropdown({ label, onSelect }: DropdownProps) {
+export default function Dropdown({ onSelect, initialDirection, initialSection }: DropdownProps) {
     const [selectedValue, setSelectedValue] = useState<string>('');
 
     const options: Option[] = [
@@ -47,6 +48,18 @@ export default function Dropdown({ label, onSelect }: DropdownProps) {
         },
     ];
 
+    // Set initial value based on direction and section
+    useEffect(() => {
+        if (initialDirection && initialSection) {
+            const matchingOption = options.find(
+                opt => opt.direction === initialDirection && opt.section === initialSection
+            );
+            if (matchingOption) {
+                setSelectedValue(matchingOption.label);
+            }
+        }
+    }, [initialDirection, initialSection]);
+
     const handleChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
         const label = e.target.value;
         setSelectedValue(label);
@@ -57,7 +70,7 @@ export default function Dropdown({ label, onSelect }: DropdownProps) {
     };
 
     return (
-        <div className="mb-6">
+        <div className="mb-4">
             <label className="block text-m font-semibold text-gray-700 mb-2">
                 Start and end location:
             </label>
