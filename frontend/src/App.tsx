@@ -9,7 +9,6 @@ import TidalBufferSlider from './components/TidalBufferSlider';
 
 
 function App() {
-  // Helper function to get query parameters
   const getQueryParams = () => {
     const params = new URLSearchParams(window.location.search);
     return {
@@ -24,7 +23,6 @@ function App() {
     };
   };
 
-  // Initialize state with query parameters or defaults
   const initialParams = getQueryParams();
   const [selectedDirection, setSelectedDirection] = useState(initialParams.direction);
   const [selectedSection, setSelectedSection] = useState(initialParams.section);
@@ -34,16 +32,6 @@ function App() {
   const [minDistance, setMinDistance] = useState(initialParams.min_daily_distance);
   const [maxDistance, setMaxDistance] = useState(initialParams.max_daily_distance);
   const [buffer, setBuffer] = useState(initialParams.min_buffer);
-
-
-  // const [selectedDirection, setSelectedDirection] = useState('');
-  // const [selectedSection, setSelectedSection] = useState('');
-  // const [startDate, setStartDate] = useState('');
-  // const [endDate, setEndDate] = useState('');
-  // const [speed, setSpeed] = useState(1.0);
-  // const [minDistance, setMinDistance] = useState(3.0);
-  // const [maxDistance, setMaxDistance] = useState(8.0);
-  // const [buffer, setBuffer] = useState(1.0);
 
   const handleDropdownSelect = (direction: string, section: string) => {
     setSelectedDirection(direction);
@@ -65,9 +53,8 @@ function App() {
       min_buffer: buffer,
     };
 
-    console.log('Calling API with:', apiData);
+    console.log('Calling API with:', apiData); // TODO
 
-    // Update query parameters
     const params = new URLSearchParams();
     params.set('section', selectedSection);
     params.set('direction', selectedDirection);
@@ -78,7 +65,6 @@ function App() {
     params.set('max_daily_distance', maxDistance.toString());
     params.set('min_buffer', buffer.toString());
 
-    // Update the URL without reloading the page
     window.history.pushState({}, '', `${window.location.pathname}?${params.toString()}`)
   };
 
