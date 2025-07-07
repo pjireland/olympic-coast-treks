@@ -1,5 +1,3 @@
-import React, { useState } from 'react';
-
 const DateRangePicker = ({ startDate, setStartDate, endDate, setEndDate }) => {
 
     // Get today's date in YYYY-MM-DD format
@@ -47,7 +45,7 @@ const DateRangePicker = ({ startDate, setStartDate, endDate, setEndDate }) => {
     };
 
     return (
-        <div className="mb-6">
+        <div className="mb-4">
             <div className="flex gap-4 items-end">
                 <div className="flex-1">
                     <label className="block text-m font-semibold text-gray-700 mb-2">
