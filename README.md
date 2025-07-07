@@ -17,7 +17,10 @@ Refer to the software license for information about use and liability.
 
 ## Planning routes
 
-The simplest approach for planning routes is through the web interface (TODO).
+The simplest approach for planning routes is through the web interface.
+This will be deployed to the web soon.
+In the meantime, follow the frontend instructions below to serve a local
+instance of the frontend.
 
 ## Backend development
 
@@ -60,3 +63,15 @@ make api
 ```
 
 API docs can be then be accessed via http://localhost:8000/docs.
+
+## Frontend development
+
+`npm` is needed to serve the frontend.
+We recommend using the Node Version Manager (`nvm`) to install `npm`.
+Directions for installing `nvm` are available
+[here](https://github.com/nvm-sh/nvm).
+
+One `npm` is installed, call `npm run dev` from within the `frontend`
+subdirectory to serve the frontend locally.
+Note to make API calls from the front end, you'll need to also have a local
+API running, per the earlier directions.
