@@ -13,6 +13,7 @@ interface Route {
   date: string; // ISO date string
   start_location: string;
   end_location: string;
+  distance: number;
   first_possible_start: string; // ISO datetime string
   last_possible_start: string; // ISO datetime string
   first_possible_end: string; // ISO datetime string
@@ -49,6 +50,7 @@ function App() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [hasSearched, setHasSearched] = useState(false);
+  const [expandedOptions, setExpandedOptions] = useState<Set<number>>(new Set());
 
   const handleDropdownSelect = (direction: string, section: string) => {
     setSelectedDirection(direction);
@@ -61,6 +63,8 @@ function App() {
     setIsLoading(true);
     setError(null);
     setHasSearched(true);
+    setExpandedOptions(new Set());
+
 
     try {
       // Build query parameters for GET request
@@ -113,12 +117,32 @@ function App() {
     return new Date(dateString).toLocaleDateString();
   };
 
-  const formatDateTime = (dateTimeString: string) => {
-    return new Date(dateTimeString).toLocaleString();
-  };
-
   const formatTimeOnly = (dateTimeString: string) => {
     return new Date(dateTimeString).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  };
+
+  const toggleOption = (campsiteCombination: number) => {
+    setExpandedOptions(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(campsiteCombination)) {
+        newSet.delete(campsiteCombination);
+      } else {
+        newSet.add(campsiteCombination);
+      }
+      return newSet;
+    });
+  };
+
+  // Helper function to get unique locations for a set of routes
+  const getUniqueLocations = (routes: Route[]) => {
+    const locationSet = new Set<string>();
+    routes.forEach(route => {
+      locationSet.add(route.start_location);
+      locationSet.add(route.end_location);
+    });
+    const locations = Array.from(locationSet);
+    // Drop first and last entries
+    return locations.slice(1, -1);
   };
 
   return (
@@ -194,6 +218,9 @@ function App() {
               )
                 .sort(([a], [b]) => Number(a) - Number(b)) // Sort by campsite combination number
                 .map(([campsiteCombination, routes], index) => {
+                  // Get unique locations for this campsite combination
+                  const uniqueLocations = getUniqueLocations(routes);
+
                   // Merge duplicate rows with same campsite_combination, date, start_location, end_location
                   const mergedRoutes = routes.reduce((acc, route) => {
                     const key = `${route.campsite_combination}-${route.date}-${route.start_location}-${route.end_location}`;
@@ -203,6 +230,7 @@ function App() {
                         date: route.date,
                         start_location: route.start_location,
                         end_location: route.end_location,
+                        distance: route.distance,
                         start_times: [],
                         end_times: []
                       };
@@ -221,61 +249,104 @@ function App() {
                     date: string;
                     start_location: string;
                     end_location: string;
+                    distance: number;
                     start_times: { first: string; last: string }[];
                     end_times: { first: string; last: string }[];
                   }>);
 
                   return (
                     <div key={campsiteCombination} className="bg-gray-50 p-4 rounded-lg">
-                      <h3 className="text-xl font-semibold text-gray-800 mb-4">
-                        Option {index + 1}
-                      </h3>
-                      <div className="overflow-x-auto">
-                        <table className="w-full border-collapse border border-gray-300 bg-white">
-                          <thead>
-                            <tr className="bg-gray-50">
-                              <th className="border border-gray-300 px-4 py-2 text-left">Date</th>
-                              <th className="border border-gray-300 px-4 py-2 text-left">Start Location</th>
-                              <th className="border border-gray-300 px-4 py-2 text-left">End Location</th>
-                              <th className="border border-gray-300 px-4 py-2 text-left">Start Window</th>
-                              <th className="border border-gray-300 px-4 py-2 text-left">End Window</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {Object.values(mergedRoutes).map((route, routeIndex) => (
-                              <tr key={`${route.campsite_combination}-${route.date}-${routeIndex}`} className="hover:bg-gray-50">
-                                <td className="border border-gray-300 px-4 py-2">
-                                  {formatDate(route.date)}
-                                </td>
-                                <td className="border border-gray-300 px-4 py-2">
-                                  {route.start_location}
-                                </td>
-                                <td className="border border-gray-300 px-4 py-2">
-                                  {route.end_location}
-                                </td>
-                                <td className="border border-gray-300 px-4 py-2">
-                                  <div className="text-sm space-y-1">
-                                    {route.start_times.map((timeWindow, timeIndex) => (
-                                      <div key={timeIndex} className="border-b border-gray-200 pb-1 last:border-b-0">
-                                        <div>{formatTimeOnly(timeWindow.first)} – {formatTimeOnly(timeWindow.last)}</div>
-                                      </div>
-                                    ))}
-                                  </div>
-                                </td>
-                                <td className="border border-gray-300 px-4 py-2">
-                                  <div className="text-sm space-y-1">
-                                    {route.end_times.map((timeWindow, timeIndex) => (
-                                      <div key={timeIndex} className="border-b border-gray-200 pb-1 last:border-b-0">
-                                        <div>{formatTimeOnly(timeWindow.first)} – {formatTimeOnly(timeWindow.last)}</div>
-                                      </div>
-                                    ))}
-                                  </div>
-                                </td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
+                      <div className="flex items-center gap-1 mb-2">
+                        <button
+                          onClick={() => toggleOption(Number(campsiteCombination))}
+                          className="flex-shrink-0 w-5 h-5 p-0 text-lg font-bold text-gray-600 hover:text-gray-800 transition-colors flex items-center justify-center"
+                        >
+                          {expandedOptions.has(Number(campsiteCombination)) ? '−' : '+'}
+                        </button>
+                        <h3 className="text-xl font-semibold text-gray-800">
+                          Option {index + 1}
+                        </h3>
                       </div>
+                      <div className="mb-4">
+                        <div className="flex items-center gap-2">
+                          <p className="text-sm text-gray-600">Campsites:</p>
+                          <div className="flex flex-wrap gap-2">
+                            {uniqueLocations.map((location, locIndex) => (
+                              <span
+                                key={locIndex}
+                                className="bg-blue-100 text-blue-800 text-sm px-2 py-1 rounded-full"
+                              >
+                                {location}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2 mt-2">
+                          <p className="text-sm text-gray-600">Daily distances:</p>
+                          <div className="flex flex-wrap gap-2">
+                            {Object.values(mergedRoutes).map((route, routeIndex) => (
+                              <span
+                                key={routeIndex}
+                                className="bg-blue-100 text-blue-800 text-sm px-2 py-1 rounded-full"
+                              >
+                                {route.distance.toFixed(1)} mi
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                      {expandedOptions.has(Number(campsiteCombination)) && (
+                        <div className="overflow-x-auto">
+                          <table className="w-full bg-white text-sm">
+                            <thead>
+                              <tr className="text-left underline">
+                                <th className="px-4 py-2">Date</th>
+                                <th className="px-4 py-2">Start Location</th>
+                                <th className="px-4 py-2">End Location</th>
+                                <th className="px-4 py-2">Distance</th>
+                                <th className="px-4 py-2">Start Window</th>
+                                <th className="px-4 py-2">End Window</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {Object.values(mergedRoutes).map((route, routeIndex) => (
+                                <tr key={`${route.campsite_combination}-${route.date}-${routeIndex}`} className="hover:bg-gray-50">
+                                  <td className="px-4 py-2">
+                                    {formatDate(route.date)}
+                                  </td>
+                                  <td className="px-4 py-2">
+                                    {route.start_location}
+                                  </td>
+                                  <td className="px-4 py-2">
+                                    {route.end_location}
+                                  </td>
+                                  <td className="px-4 py-2">
+                                    {route.distance.toFixed(1)} mi
+                                  </td>
+                                  <td className="px-4 py-2">
+                                    <div className="space-y-1">
+                                      {route.start_times.map((timeWindow, timeIndex) => (
+                                        <div key={timeIndex} className="pb-1">
+                                          <div>{formatTimeOnly(timeWindow.first)} – {formatTimeOnly(timeWindow.last)}</div>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </td>
+                                  <td className="px-4 py-2">
+                                    <div className="space-y-1">
+                                      {route.end_times.map((timeWindow, timeIndex) => (
+                                        <div key={timeIndex} className="pb-1">
+                                          <div>{formatTimeOnly(timeWindow.first)} – {formatTimeOnly(timeWindow.last)}</div>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      )}
                     </div>
                   );
                 })}

@@ -17,7 +17,7 @@ export default function TidalBufferSlider({ buffer, setBuffer }: TidalBufferSlid
             <input
                 type="range"
                 min="0"
-                max="3.0"
+                max="2.0"
                 step="0.1"
                 value={buffer}
                 onChange={handleBufferChange}
