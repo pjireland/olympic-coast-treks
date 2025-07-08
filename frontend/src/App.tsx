@@ -63,6 +63,8 @@ function App() {
     setIsLoading(true);
     setError(null);
     setHasSearched(true);
+    setExpandedOptions(new Set());
+
 
     try {
       // Build query parameters for GET request
@@ -295,45 +297,45 @@ function App() {
                       </div>
                       {expandedOptions.has(Number(campsiteCombination)) && (
                         <div className="overflow-x-auto">
-                          <table className="w-full border-collapse border border-gray-300 bg-white text-sm">
+                          <table className="w-full bg-white text-sm">
                             <thead>
-                              <tr className="bg-gray-50">
-                                <th className="border border-gray-300 px-4 py-2 text-left">Date</th>
-                                <th className="border border-gray-300 px-4 py-2 text-left">Start Location</th>
-                                <th className="border border-gray-300 px-4 py-2 text-left">End Location</th>
-                                <th className="border border-gray-300 px-4 py-2 text-left">Distance</th>
-                                <th className="border border-gray-300 px-4 py-2 text-left">Start Window</th>
-                                <th className="border border-gray-300 px-4 py-2 text-left">End Window</th>
+                              <tr className="text-left underline">
+                                <th className="px-4 py-2">Date</th>
+                                <th className="px-4 py-2">Start Location</th>
+                                <th className="px-4 py-2">End Location</th>
+                                <th className="px-4 py-2">Distance</th>
+                                <th className="px-4 py-2">Start Window</th>
+                                <th className="px-4 py-2">End Window</th>
                               </tr>
                             </thead>
                             <tbody>
                               {Object.values(mergedRoutes).map((route, routeIndex) => (
                                 <tr key={`${route.campsite_combination}-${route.date}-${routeIndex}`} className="hover:bg-gray-50">
-                                  <td className="border border-gray-300 px-4 py-2">
+                                  <td className="px-4 py-2">
                                     {formatDate(route.date)}
                                   </td>
-                                  <td className="border border-gray-300 px-4 py-2">
+                                  <td className="px-4 py-2">
                                     {route.start_location}
                                   </td>
-                                  <td className="border border-gray-300 px-4 py-2">
+                                  <td className="px-4 py-2">
                                     {route.end_location}
                                   </td>
-                                  <td className="border border-gray-300 px-4 py-2">
+                                  <td className="px-4 py-2">
                                     {route.distance.toFixed(1)} mi
                                   </td>
-                                  <td className="border border-gray-300 px-4 py-2">
+                                  <td className="px-4 py-2">
                                     <div className="space-y-1">
                                       {route.start_times.map((timeWindow, timeIndex) => (
-                                        <div key={timeIndex} className="border-b border-gray-200 pb-1 last:border-b-0">
+                                        <div key={timeIndex} className="pb-1">
                                           <div>{formatTimeOnly(timeWindow.first)} – {formatTimeOnly(timeWindow.last)}</div>
                                         </div>
                                       ))}
                                     </div>
                                   </td>
-                                  <td className="border border-gray-300 px-4 py-2">
+                                  <td className="px-4 py-2">
                                     <div className="space-y-1">
                                       {route.end_times.map((timeWindow, timeIndex) => (
-                                        <div key={timeIndex} className="border-b border-gray-200 pb-1 last:border-b-0">
+                                        <div key={timeIndex} className="pb-1">
                                           <div>{formatTimeOnly(timeWindow.first)} – {formatTimeOnly(timeWindow.last)}</div>
                                         </div>
                                       ))}
