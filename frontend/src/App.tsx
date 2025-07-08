@@ -272,7 +272,7 @@ function App() {
                             {uniqueLocations.map((location, locIndex) => (
                               <span
                                 key={locIndex}
-                                className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full"
+                                className="bg-blue-100 text-blue-800 text-sm px-2 py-1 rounded-full"
                               >
                                 {location}
                               </span>
@@ -285,7 +285,7 @@ function App() {
                             {Object.values(mergedRoutes).map((route, routeIndex) => (
                               <span
                                 key={routeIndex}
-                                className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full"
+                                className="bg-blue-100 text-blue-800 text-sm px-2 py-1 rounded-full"
                               >
                                 {route.distance.toFixed(1)} mi
                               </span>
