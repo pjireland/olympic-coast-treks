@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect } from 'react';
 
 type Option = {
   label: string;
@@ -14,34 +14,34 @@ interface DropdownProps {
 
 const options: Option[] = [
   {
-    label: "Oil City → La Push Road (South Coast)",
-    direction: "north",
-    section: "south",
+    label: 'Oil City → La Push Road (South Coast)',
+    direction: 'north',
+    section: 'south',
   },
   {
-    label: "La Push Road → Oil City (South Coast)",
-    direction: "south",
-    section: "south",
+    label: 'La Push Road → Oil City (South Coast)',
+    direction: 'south',
+    section: 'south',
   },
   {
-    label: "Rialto Beach → Ozette Trailhead (South Section of North Coast)",
-    direction: "north",
-    section: "middle",
+    label: 'Rialto Beach → Ozette Trailhead (South Section of North Coast)',
+    direction: 'north',
+    section: 'middle',
   },
   {
-    label: "Ozette Trailhead → Rialto Beach (South Section of North Coast)",
-    direction: "south",
-    section: "middle",
+    label: 'Ozette Trailhead → Rialto Beach (South Section of North Coast)',
+    direction: 'south',
+    section: 'middle',
   },
   {
-    label: "Ozette Trailhead → Shi Shi Beach (North Section of North Coast)",
-    direction: "north",
-    section: "north",
+    label: 'Ozette Trailhead → Shi Shi Beach (North Section of North Coast)',
+    direction: 'north',
+    section: 'north',
   },
   {
-    label: "Shi Shi Beach → Ozette Trailhead (North Section of North Coast)",
-    direction: "south",
-    section: "north",
+    label: 'Shi Shi Beach → Ozette Trailhead (North Section of North Coast)',
+    direction: 'south',
+    section: 'north',
   },
 ];
 
@@ -50,7 +50,7 @@ export default function Dropdown({
   initialDirection,
   initialSection,
 }: DropdownProps) {
-  const [selectedValue, setSelectedValue] = useState<string>("");
+  const [selectedValue, setSelectedValue] = useState<string>('');
 
   // Now the useEffect dependency array is correct
   useEffect(() => {
@@ -75,16 +75,16 @@ export default function Dropdown({
   };
 
   return (
-    <div className="mb-4">
-      <label className="block text-m font-semibold text-gray-700 mb-2">
+    <div className='mb-4'>
+      <label className='block text-m font-semibold text-gray-700 mb-2'>
         Start and end location:
       </label>
       <select
         value={selectedValue}
         onChange={handleChange}
-        className="w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-gray-800"
+        className='w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-gray-800'
       >
-        <option value="" disabled></option>
+        <option value='' disabled></option>
         {options.map((opt) => (
           <option key={opt.label} value={opt.label}>
             {opt.label}

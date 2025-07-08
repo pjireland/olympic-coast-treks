@@ -1,11 +1,11 @@
-import { useState } from "react";
-import "./App.css";
+import { useState } from 'react';
+import './App.css';
 
-import Dropdown from "./components/Dropdown";
-import DateRangePicker from "./components/DateRangePicker";
-import HikingSpeedSlider from "./components/HikingSpeedSlider";
-import DistanceRangeSlider from "./components/DistanceRangeSlider";
-import TidalBufferSlider from "./components/TidalBufferSlider";
+import Dropdown from './components/Dropdown';
+import DateRangePicker from './components/DateRangePicker';
+import HikingSpeedSlider from './components/HikingSpeedSlider';
+import DistanceRangeSlider from './components/DistanceRangeSlider';
+import TidalBufferSlider from './components/TidalBufferSlider';
 
 // Define the shape of your API response
 interface Route {
@@ -24,14 +24,14 @@ function App() {
   const getQueryParams = () => {
     const params = new URLSearchParams(window.location.search);
     return {
-      section: params.get("section") || "",
-      direction: params.get("direction") || "",
-      start_date: params.get("start_date") || "",
-      end_date: params.get("end_date") || "",
-      speed: parseFloat(params.get("speed") || "1.0"),
-      min_daily_distance: parseFloat(params.get("min_daily_distance") || "3.0"),
-      max_daily_distance: parseFloat(params.get("max_daily_distance") || "8.0"),
-      min_buffer: parseFloat(params.get("min_buffer") || "1.0"),
+      section: params.get('section') || '',
+      direction: params.get('direction') || '',
+      start_date: params.get('start_date') || '',
+      end_date: params.get('end_date') || '',
+      speed: parseFloat(params.get('speed') || '1.0'),
+      min_daily_distance: parseFloat(params.get('min_daily_distance') || '3.0'),
+      max_daily_distance: parseFloat(params.get('max_daily_distance') || '8.0'),
+      min_buffer: parseFloat(params.get('min_buffer') || '1.0'),
     };
   };
 
@@ -77,21 +77,21 @@ function App() {
     try {
       // Build query parameters for GET request
       const params = new URLSearchParams();
-      params.set("section", selectedSection);
-      params.set("direction", selectedDirection);
-      params.set("start_date", startDate);
-      params.set("end_date", endDate);
-      params.set("speed", speed.toString());
-      params.set("min_daily_distance", minDistance.toString());
-      params.set("max_daily_distance", maxDistance.toString());
-      params.set("min_buffer", buffer.toString());
+      params.set('section', selectedSection);
+      params.set('direction', selectedDirection);
+      params.set('start_date', startDate);
+      params.set('end_date', endDate);
+      params.set('speed', speed.toString());
+      params.set('min_daily_distance', minDistance.toString());
+      params.set('max_daily_distance', maxDistance.toString());
+      params.set('min_buffer', buffer.toString());
 
       const response = await fetch(
         `http://localhost:8000/routes?${params.toString()}`,
         {
-          method: "GET",
+          method: 'GET',
           headers: {
-            "Content-Type": "application/json",
+            'Content-Type': 'application/json',
           },
         },
       );
@@ -107,25 +107,25 @@ function App() {
 
       // Update URL parameters (keeping this for browser history)
       const urlParams = new URLSearchParams();
-      urlParams.set("section", selectedSection);
-      urlParams.set("direction", selectedDirection);
-      urlParams.set("start_date", startDate);
-      urlParams.set("end_date", endDate);
-      urlParams.set("speed", speed.toString());
-      urlParams.set("min_daily_distance", minDistance.toString());
-      urlParams.set("max_daily_distance", maxDistance.toString());
-      urlParams.set("min_buffer", buffer.toString());
+      urlParams.set('section', selectedSection);
+      urlParams.set('direction', selectedDirection);
+      urlParams.set('start_date', startDate);
+      urlParams.set('end_date', endDate);
+      urlParams.set('speed', speed.toString());
+      urlParams.set('min_daily_distance', minDistance.toString());
+      urlParams.set('max_daily_distance', maxDistance.toString());
+      urlParams.set('min_buffer', buffer.toString());
 
       window.history.pushState(
         {},
-        "",
+        '',
         `${window.location.pathname}?${urlParams.toString()}`,
       );
     } catch (err) {
       setError(
         err instanceof Error
           ? err.message
-          : "An error occurred while fetching routes",
+          : 'An error occurred while fetching routes',
       );
       setResults([]);
     } finally {
@@ -139,8 +139,8 @@ function App() {
 
   const formatTimeOnly = (dateTimeString: string) => {
     return new Date(dateTimeString).toLocaleTimeString([], {
-      hour: "2-digit",
-      minute: "2-digit",
+      hour: '2-digit',
+      minute: '2-digit',
     });
   };
 
@@ -169,8 +169,8 @@ function App() {
   };
 
   return (
-    <main className="min-h-screen bg-gray-100 p-8">
-      <div className="w-fit mx-auto bg-white p-6 rounded-lg shadow-md text-left">
+    <main className='min-h-screen bg-gray-100 p-8'>
+      <div className='w-fit mx-auto bg-white p-6 rounded-lg shadow-md text-left'>
         <Dropdown
           initialDirection={selectedDirection}
           initialSection={selectedSection}
@@ -190,52 +190,52 @@ function App() {
           setMaxDistance={setMaxDistance}
         />
         <TidalBufferSlider buffer={buffer} setBuffer={setBuffer} />
-        <div className="w-fit rounded-lg text-left">
+        <div className='w-fit rounded-lg text-left'>
           <button
             onClick={callAPI}
             disabled={!isValidInput || isLoading}
             className={`px-4 py-2 rounded-md font-semibold ${
               isValidInput && !isLoading
-                ? "bg-blue-500 text-white hover:bg-blue-600 cursor-pointer"
-                : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                ? 'bg-blue-500 text-white hover:bg-blue-600 cursor-pointer'
+                : 'bg-gray-300 text-gray-500 cursor-not-allowed'
             }`}
           >
-            {isLoading ? "Searching..." : "Find routes"}
+            {isLoading ? 'Searching...' : 'Find routes'}
           </button>
         </div>
       </div>
 
       {/* Results Section */}
       {hasSearched && (
-        <div className="w-full max-w-6xl mx-auto mt-8 bg-white p-6 rounded-lg shadow-md text-left">
-          <h2 className="text-2xl font-bold text-gray-800 mb-4">
+        <div className='w-full max-w-6xl mx-auto mt-8 bg-white p-6 rounded-lg shadow-md text-left'>
+          <h2 className='text-2xl font-bold text-gray-800 mb-4'>
             Possible routes
           </h2>
 
           {error && (
-            <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+            <div className='bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4'>
               <strong>Error:</strong> {error}
             </div>
           )}
 
           {isLoading && (
-            <div className="text-center py-8">
-              <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
-              <p className="mt-2 text-gray-600">Searching for routes...</p>
+            <div className='text-center py-8'>
+              <div className='inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500'></div>
+              <p className='mt-2 text-gray-600'>Searching for routes...</p>
             </div>
           )}
 
           {!isLoading && !error && results.length === 0 && (
-            <div className="text-center py-8 text-gray-500">
+            <div className='text-center py-8 text-gray-500'>
               <p>No routes found for your search criteria.</p>
-              <p className="text-sm mt-2">
+              <p className='text-sm mt-2'>
                 Try adjusting your parameters and search again.
               </p>
             </div>
           )}
 
           {!isLoading && !error && results.length > 0 && (
-            <div className="space-y-8">
+            <div className='space-y-8'>
               {/* Group routes by campsite_combination */}
               {Object.entries(
                 results.reduce(
@@ -297,47 +297,47 @@ function App() {
                   return (
                     <div
                       key={campsiteCombination}
-                      className="bg-gray-50 p-4 rounded-lg"
+                      className='bg-gray-50 p-4 rounded-lg'
                     >
-                      <div className="flex items-center gap-1 mb-2">
+                      <div className='flex items-center gap-1 mb-2'>
                         <button
                           onClick={() =>
                             toggleOption(Number(campsiteCombination))
                           }
-                          className="flex-shrink-0 w-5 h-5 p-0 text-lg font-bold text-gray-600 hover:text-gray-800 transition-colors flex items-center justify-center"
+                          className='flex-shrink-0 w-5 h-5 p-0 text-lg font-bold text-gray-600 hover:text-gray-800 transition-colors flex items-center justify-center'
                         >
                           {expandedOptions.has(Number(campsiteCombination))
-                            ? "−"
-                            : "+"}
+                            ? '−'
+                            : '+'}
                         </button>
-                        <h3 className="text-xl font-semibold text-gray-800">
+                        <h3 className='text-xl font-semibold text-gray-800'>
                           Option {index + 1}
                         </h3>
                       </div>
-                      <div className="mb-4">
-                        <div className="flex items-center gap-2">
-                          <p className="text-sm text-gray-600">Campsites:</p>
-                          <div className="flex flex-wrap gap-2">
+                      <div className='mb-4'>
+                        <div className='flex items-center gap-2'>
+                          <p className='text-sm text-gray-600'>Campsites:</p>
+                          <div className='flex flex-wrap gap-2'>
                             {uniqueLocations.map((location, locIndex) => (
                               <span
                                 key={locIndex}
-                                className="bg-blue-100 text-blue-800 text-sm px-2 py-1 rounded-full"
+                                className='bg-blue-100 text-blue-800 text-sm px-2 py-1 rounded-full'
                               >
                                 {location}
                               </span>
                             ))}
                           </div>
                         </div>
-                        <div className="flex items-center gap-2 mt-2">
-                          <p className="text-sm text-gray-600">
+                        <div className='flex items-center gap-2 mt-2'>
+                          <p className='text-sm text-gray-600'>
                             Daily distances:
                           </p>
-                          <div className="flex flex-wrap gap-2">
+                          <div className='flex flex-wrap gap-2'>
                             {Object.values(mergedRoutes).map(
                               (route, routeIndex) => (
                                 <span
                                   key={routeIndex}
-                                  className="bg-blue-100 text-blue-800 text-sm px-2 py-1 rounded-full"
+                                  className='bg-blue-100 text-blue-800 text-sm px-2 py-1 rounded-full'
                                 >
                                   {route.distance.toFixed(1)} mi
                                 </span>
@@ -347,16 +347,16 @@ function App() {
                         </div>
                       </div>
                       {expandedOptions.has(Number(campsiteCombination)) && (
-                        <div className="overflow-x-auto">
-                          <table className="w-full bg-white text-sm">
+                        <div className='overflow-x-auto'>
+                          <table className='w-full bg-white text-sm'>
                             <thead>
-                              <tr className="text-left underline">
-                                <th className="px-4 py-2">Date</th>
-                                <th className="px-4 py-2">Start Location</th>
-                                <th className="px-4 py-2">End Location</th>
-                                <th className="px-4 py-2">Distance</th>
-                                <th className="px-4 py-2">Start Window</th>
-                                <th className="px-4 py-2">End Window</th>
+                              <tr className='text-left underline'>
+                                <th className='px-4 py-2'>Date</th>
+                                <th className='px-4 py-2'>Start Location</th>
+                                <th className='px-4 py-2'>End Location</th>
+                                <th className='px-4 py-2'>Distance</th>
+                                <th className='px-4 py-2'>Start Window</th>
+                                <th className='px-4 py-2'>End Window</th>
                               </tr>
                             </thead>
                             <tbody>
@@ -364,33 +364,33 @@ function App() {
                                 (route, routeIndex) => (
                                   <tr
                                     key={`${route.campsite_combination}-${route.date}-${routeIndex}`}
-                                    className="hover:bg-gray-50"
+                                    className='hover:bg-gray-50'
                                   >
-                                    <td className="px-4 py-2">
+                                    <td className='px-4 py-2'>
                                       {formatDate(route.date)}
                                     </td>
-                                    <td className="px-4 py-2">
+                                    <td className='px-4 py-2'>
                                       {route.start_location}
                                     </td>
-                                    <td className="px-4 py-2">
+                                    <td className='px-4 py-2'>
                                       {route.end_location}
                                     </td>
-                                    <td className="px-4 py-2">
+                                    <td className='px-4 py-2'>
                                       {route.distance.toFixed(1)} mi
                                     </td>
-                                    <td className="px-4 py-2">
-                                      <div className="space-y-1">
+                                    <td className='px-4 py-2'>
+                                      <div className='space-y-1'>
                                         {route.start_times.map(
                                           (timeWindow, timeIndex) => (
                                             <div
                                               key={timeIndex}
-                                              className="pb-1"
+                                              className='pb-1'
                                             >
                                               <div>
                                                 {formatTimeOnly(
                                                   timeWindow.first,
-                                                )}{" "}
-                                                –{" "}
+                                                )}{' '}
+                                                –{' '}
                                                 {formatTimeOnly(
                                                   timeWindow.last,
                                                 )}
@@ -400,19 +400,19 @@ function App() {
                                         )}
                                       </div>
                                     </td>
-                                    <td className="px-4 py-2">
-                                      <div className="space-y-1">
+                                    <td className='px-4 py-2'>
+                                      <div className='space-y-1'>
                                         {route.end_times.map(
                                           (timeWindow, timeIndex) => (
                                             <div
                                               key={timeIndex}
-                                              className="pb-1"
+                                              className='pb-1'
                                             >
                                               <div>
                                                 {formatTimeOnly(
                                                   timeWindow.first,
-                                                )}{" "}
-                                                –{" "}
+                                                )}{' '}
+                                                –{' '}
                                                 {formatTimeOnly(
                                                   timeWindow.last,
                                                 )}
