@@ -24,6 +24,7 @@ class Route(BaseModel):
     date: date
     start_location: str
     end_location: str
+    distance: float
     first_possible_start: datetime
     last_possible_start: datetime
     first_possible_end: datetime

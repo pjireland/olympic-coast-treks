@@ -63,6 +63,9 @@ def calc_routes(
             The start location for a given day in the trip.
         * ``end_location`` : str
             The end location for a given day in the trip.
+        * ``distance`` : float
+            The distance between ``end_location`` and ``start_location`` in
+            miles.
         * ``first_possible_start`` : datetime
             The first possible starting time within a given window.
         * ``last_possible_start`` : datetime
@@ -94,6 +97,7 @@ def calc_routes(
             "date": date,
             "start_location": str,
             "end_location": str,
+            "distance": float,
             "first_possible_start": datetime,
             "last_possible_start": datetime,
             "first_possible_end": datetime,
@@ -193,9 +197,9 @@ def analyze_route_on_day(
         in the ``first_possible_start`` and the ``last_possible_start``
         columns. The corresponding end times are given by the
         ``first_possible_end`` and ``last_possible_end`` columns based on the
-        input speed. The start location, end location, and date are also
-        included as the ``start_location``, ``end_location``, and ``date``
-        columns, respectively.
+        input speed. The start location, end location, distance in miles, and
+        date are also included as the ``start_location``, ``end_location``,
+        ``distance``, and ``date`` columns, respectively.
     """
     tides = get_tide_levels(day=day).filter(pl.col("is_light"))
     start_id = (
@@ -278,6 +282,7 @@ def analyze_route_on_day(
                 "last_possible_start": datetime,
                 "first_possible_end": datetime,
                 "last_possible_end": datetime,
+                "distance": float,
                 "start_location": str,
                 "end_location": str,
                 "date": date,
@@ -297,6 +302,7 @@ def analyze_route_on_day(
     res = res.with_columns(
         pl.lit(start_location).alias("start_location"),
         pl.lit(end_location).alias("end_location"),
+        pl.lit(last_distance - first_distance).alias("distance"),
         pl.col("first_possible_start").dt.date().alias("date"),
     ).drop("run_id")
     return res

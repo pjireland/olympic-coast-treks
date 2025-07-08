@@ -13,6 +13,7 @@ interface Route {
   date: string; // ISO date string
   start_location: string;
   end_location: string;
+  distance: number;
   first_possible_start: string; // ISO datetime string
   last_possible_start: string; // ISO datetime string
   first_possible_end: string; // ISO datetime string
@@ -113,12 +114,20 @@ function App() {
     return new Date(dateString).toLocaleDateString();
   };
 
-  const formatDateTime = (dateTimeString: string) => {
-    return new Date(dateTimeString).toLocaleString();
-  };
-
   const formatTimeOnly = (dateTimeString: string) => {
     return new Date(dateTimeString).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  };
+
+  // Helper function to get unique locations for a set of routes
+  const getUniqueLocations = (routes: Route[]) => {
+    const locationSet = new Set<string>();
+    routes.forEach(route => {
+      locationSet.add(route.start_location);
+      locationSet.add(route.end_location);
+    });
+    const locations = Array.from(locationSet);
+    // Drop first and last entries
+    return locations.slice(1, -1);
   };
 
   return (
@@ -194,6 +203,9 @@ function App() {
               )
                 .sort(([a], [b]) => Number(a) - Number(b)) // Sort by campsite combination number
                 .map(([campsiteCombination, routes], index) => {
+                  // Get unique locations for this campsite combination
+                  const uniqueLocations = getUniqueLocations(routes);
+
                   // Merge duplicate rows with same campsite_combination, date, start_location, end_location
                   const mergedRoutes = routes.reduce((acc, route) => {
                     const key = `${route.campsite_combination}-${route.date}-${route.start_location}-${route.end_location}`;
@@ -203,6 +215,7 @@ function App() {
                         date: route.date,
                         start_location: route.start_location,
                         end_location: route.end_location,
+                        distance: route.distance,
                         start_times: [],
                         end_times: []
                       };
@@ -221,15 +234,44 @@ function App() {
                     date: string;
                     start_location: string;
                     end_location: string;
+                    distance: number;
                     start_times: { first: string; last: string }[];
                     end_times: { first: string; last: string }[];
                   }>);
 
                   return (
                     <div key={campsiteCombination} className="bg-gray-50 p-4 rounded-lg">
-                      <h3 className="text-xl font-semibold text-gray-800 mb-4">
+                      <h3 className="text-xl font-semibold text-gray-800 mb-2">
                         Option {index + 1}
                       </h3>
+                      <div className="mb-4">
+                        <div className="flex items-center gap-2">
+                          <p className="text-sm text-gray-600">Campsites:</p>
+                          <div className="flex flex-wrap gap-2">
+                            {uniqueLocations.map((location, locIndex) => (
+                              <span
+                                key={locIndex}
+                                className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full"
+                              >
+                                {location}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2 mt-2">
+                          <p className="text-sm text-gray-600">Daily distances:</p>
+                          <div className="flex flex-wrap gap-2">
+                            {Object.values(mergedRoutes).map((route, routeIndex) => (
+                              <span
+                                key={routeIndex}
+                                className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full"
+                              >
+                                {route.distance.toFixed(1)} mi
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
                       <div className="overflow-x-auto">
                         <table className="w-full border-collapse border border-gray-300 bg-white">
                           <thead>
@@ -237,6 +279,7 @@ function App() {
                               <th className="border border-gray-300 px-4 py-2 text-left">Date</th>
                               <th className="border border-gray-300 px-4 py-2 text-left">Start Location</th>
                               <th className="border border-gray-300 px-4 py-2 text-left">End Location</th>
+                              <th className="border border-gray-300 px-4 py-2 text-left">Distance (miles)</th>
                               <th className="border border-gray-300 px-4 py-2 text-left">Start Window</th>
                               <th className="border border-gray-300 px-4 py-2 text-left">End Window</th>
                             </tr>
@@ -252,6 +295,9 @@ function App() {
                                 </td>
                                 <td className="border border-gray-300 px-4 py-2">
                                   {route.end_location}
+                                </td>
+                                <td className="border border-gray-300 px-4 py-2">
+                                  {route.distance.toFixed(1)}
                                 </td>
                                 <td className="border border-gray-300 px-4 py-2">
                                   <div className="text-sm space-y-1">
