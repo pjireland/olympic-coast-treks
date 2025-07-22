@@ -1,6 +1,6 @@
 """Unit test for API module."""
 
-from datetime import date
+from datetime import date, datetime
 
 import polars as pl
 from fastapi.testclient import TestClient
@@ -12,6 +12,39 @@ client = TestClient(app)
 
 def test_get_health():
     assert client.get("/health").json()["status"] == "healthy"
+
+
+def test_get_plot():
+    # Valid input
+    resp = client.get(
+        "/plot",
+        params={
+            "start_location": "Ozette Trailhead",
+            "end_location": "Norwegian Memorial",
+            "start_time": datetime(
+                year=2024, month=4, day=13, hour=8, minute=0
+            ),
+            "speed": 1.0,
+        },
+    )
+    assert resp.status_code == 200
+    assert "data" in resp.json()
+    assert "layout" in resp.json()
+    # Invalid input
+    resp = client.get(
+        "/plot",
+        params={
+            "start_location": "Cape Alava",
+            "end_location": "Sand Point",
+            "start_time": datetime(
+                year=2024, month=4, day=13, hour=8, minute=0
+            ),
+            "speed": 1.0,
+        },
+    )
+    assert resp.json()["detail"] == (
+        "The start location and end location must be in the same section"
+    )
 
 
 def test_get_routes():

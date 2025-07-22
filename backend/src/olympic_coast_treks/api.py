@@ -1,5 +1,6 @@
 """API for Olympic Coast Treks."""
 
+import json
 from datetime import date, datetime
 from typing import Literal
 
@@ -7,6 +8,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
+from .plot import plot_tides_and_restrictions
 from .process import calc_routes
 
 app = FastAPI(title="Olympic Coast Treks API")
@@ -17,6 +19,11 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+class PlotlyFigureResponse(BaseModel):
+    data: list[dict]
+    layout: dict
 
 
 class Route(BaseModel):
@@ -34,6 +41,60 @@ class Route(BaseModel):
 @app.get("/health")
 def get_health():
     return {"status": "healthy"}
+
+
+@app.get("/plot")
+def get_plot(
+    start_location: str, end_location: str, start_time: datetime, speed: float
+) -> PlotlyFigureResponse:
+    """Get a plot of tides and restrictions given route information.
+
+    Parameters
+    ----------
+    start_location : str
+        Starting location.
+    end_location : str
+        Ending location.
+    start_time : datetime
+        The time to start hiking.
+    speed : float
+        The hiking speed (in miles per hour). ``1`` mile per hour is a
+        reasonable expectation given the rocky terrain along the coast.
+
+    Returns
+    -------
+    list[dict]
+        Each list element indicates a time window where travel is
+        possible between two locations. The keys are as follows:
+        * ``campsite_combination`` : int
+            Unique identifier for a possible combination of campsites. Any
+            selected route must all have the same value of
+            ``campsite_combination``.
+        * ``date`` : date
+            The date for a given day in the trip.
+        * ``start_location`` : str
+            The start location for a given day in the trip.
+        * ``end_location`` : str
+            The end location for a given day in the trip.
+        * ``first_possible_start`` : datetime
+            The first possible starting time within a given window.
+        * ``last_possible_start`` : datetime
+            The last possible starting time within a given window.
+        * ``first_possible_end`` : datetime
+            The first possible ending time within a given window.
+        * ``last_possible_end`` : datetime
+            The last possible ending time within a given window.
+    """
+    try:
+        fig = plot_tides_and_restrictions(
+            start_location=start_location,
+            end_location=end_location,
+            start_time=start_time,
+            speed=speed,
+        )
+    except ValueError as e:
+        raise HTTPException(400, str(e))
+    return json.loads(fig.to_json())
 
 
 @app.get("/routes")

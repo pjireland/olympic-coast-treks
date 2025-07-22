@@ -14,7 +14,6 @@ def test_plot_tides_and_restrictions():
             end_location="Ozette Trailhead",
             start_time=datetime(year=2024, month=1, day=1, hour=1, minute=0),
             speed=1.0,
-            min_buffer=1.0,
         )
     with pytest.raises(ValueError):
         plot_tides_and_restrictions(
@@ -22,7 +21,6 @@ def test_plot_tides_and_restrictions():
             end_location="Ozette Trailhead",
             start_time=datetime(year=2024, month=1, day=1, hour=1, minute=0),
             speed=1.0,
-            min_buffer=1.0,
         )
     with pytest.raises(ValueError):
         plot_tides_and_restrictions(
@@ -30,7 +28,6 @@ def test_plot_tides_and_restrictions():
             end_location="Invalid name",
             start_time=datetime(year=2024, month=1, day=1, hour=1, minute=0),
             speed=1.0,
-            min_buffer=1.0,
         )
     with pytest.raises(ValueError):
         plot_tides_and_restrictions(
@@ -38,15 +35,6 @@ def test_plot_tides_and_restrictions():
             end_location="Cape Alava",
             start_time=datetime(year=2024, month=1, day=1, hour=1, minute=0),
             speed=0.0,
-            min_buffer=1.0,
-        )
-    with pytest.raises(ValueError):
-        plot_tides_and_restrictions(
-            start_location="Ozette Trailhead",
-            end_location="Cape Alava",
-            start_time=datetime(year=2024, month=1, day=1, hour=1, minute=0),
-            speed=1.0,
-            min_buffer=-1.0,
         )
     # On different sections
     with pytest.raises(ValueError):
@@ -55,7 +43,6 @@ def test_plot_tides_and_restrictions():
             end_location="Oil City",
             start_time=datetime(year=2024, month=1, day=1, hour=1, minute=0),
             speed=1.0,
-            min_buffer=-1.0,
         )
     plot_tides_and_restrictions(
         start_location="Point of Arches",

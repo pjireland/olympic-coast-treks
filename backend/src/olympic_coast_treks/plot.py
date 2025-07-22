@@ -16,7 +16,6 @@ def plot_tides_and_restrictions(
     end_location: str,
     start_time: datetime,
     speed: float,
-    min_buffer: float = 1.0,
 ) -> go.Figure:
     """Plot the tides and restrictions given route information.
 
@@ -31,10 +30,6 @@ def plot_tides_and_restrictions(
     speed : float
         The hiking speed (in miles per hour). ``1`` mile per hour is a
         reasonable expectation given the rocky terrain along the coast.
-    min_buffer : float
-        The minimum allowable buffer in feet between the tidal restriction and
-        the tide level. Because tide predictions are imprecise, it is
-        recommended to use a value of ``1`` foot or more.
 
     Returns
     -------
@@ -44,8 +39,6 @@ def plot_tides_and_restrictions(
     """
     if speed <= 0:
         raise ValueError("The hiking speed must be a positive number")
-    if min_buffer < 0:
-        raise ValueError("The minimum buffer cannot be negative")
     if start_location == end_location:
         raise ValueError("start and end locations must be different")
     locations = pl.concat(
