@@ -109,6 +109,26 @@ def test_calc_possible_campsites():
 def test_analyze_route_on_day():
     locations = get_locations(section="south", direction="north")
     restrictions = get_restrictions(section="south", direction="north")
+    with pytest.raises(ValueError):
+        res = analyze_route_on_day(
+            start_location="Oil City",
+            end_location="Mosquito Creek",
+            day=date(2022, 9, 9),
+            locations=locations,
+            restrictions=restrictions,
+            speed=0.0,
+            min_buffer=0.0,
+        )
+    with pytest.raises(ValueError):
+        res = analyze_route_on_day(
+            start_location="Oil City",
+            end_location="Mosquito Creek",
+            day=date(2022, 9, 9),
+            locations=locations,
+            restrictions=restrictions,
+            speed=1.0,
+            min_buffer=-1.0,
+        )
     # Impossible to complete trip - going too slow
     res = analyze_route_on_day(
         start_location="Oil City",
@@ -176,6 +196,28 @@ def test_analyze_route_on_day():
 
 
 def test_calc_routes():
+    with pytest.raises(ValueError):
+        res = calc_routes(
+            start_date=date(year=2024, month=4, day=13),
+            end_date=date(year=2024, month=4, day=15),
+            section="north",
+            direction="north",
+            speed=0.0,
+            min_buffer=0.0,
+            min_daily_distance=3,
+            max_daily_distance=10,
+        )
+    with pytest.raises(ValueError):
+        res = calc_routes(
+            start_date=date(year=2024, month=4, day=13),
+            end_date=date(year=2024, month=4, day=15),
+            section="north",
+            direction="north",
+            speed=1.0,
+            min_buffer=-1.0,
+            min_daily_distance=3,
+            max_daily_distance=10,
+        )
     # This is a route I've done, so I know it works
     res = calc_routes(
         start_date=date(year=2024, month=4, day=13),

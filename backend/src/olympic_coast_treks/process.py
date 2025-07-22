@@ -18,7 +18,7 @@ def calc_routes(
     min_daily_distance: float = 3.0,
     max_daily_distance: float = 10.0,
     speed: float = 1.0,
-    min_buffer: float = 2.0,
+    min_buffer: float = 1.0,
 ) -> pl.DataFrame:
     """Calculate possible routes.
 
@@ -46,7 +46,7 @@ def calc_routes(
     min_buffer : float
         The minimum allowable buffer in feet between the tidal restriction and
         the tide level. Because tide predictions are imprecise, it is
-        recommended to use a value of ``2`` feet or more.
+        recommended to use a value of ``1`` foot or more.
 
     Returns
     -------
@@ -77,6 +77,8 @@ def calc_routes(
     """
     if speed <= 0:
         raise ValueError("The hiking speed must be a positive number")
+    if min_buffer < 0:
+        raise ValueError("The minimum buffer cannot be negative")
     if direction not in ["north", "south"]:
         raise ValueError("``direction`` must be either 'north' or 'south'")
     if end_date <= start_date:
@@ -163,9 +165,9 @@ def analyze_route_on_day(
     locations: pl.DataFrame,
     restrictions: pl.DataFrame,
     speed: float,
-    min_buffer: float = 2.0,
+    min_buffer: float = 1.0,
 ) -> pl.DataFrame:
-    """Analyze the the specified route on the specified day.
+    """Analyze the specified route on the specified day.
 
     Parameters
     ----------
@@ -187,7 +189,7 @@ def analyze_route_on_day(
     min_buffer : float
         The minimum allowable buffer in feet between the tidal restriction and
         the tide level. Because tide predictions are imprecise, it is
-        recommended to use a value of ``2`` feet or more.
+        recommended to use a value of ``1`` foot or more.
 
     Returns
     -------
@@ -201,6 +203,10 @@ def analyze_route_on_day(
         date are also included as the ``start_location``, ``end_location``,
         ``distance``, and ``date`` columns, respectively.
     """
+    if speed <= 0:
+        raise ValueError("The hiking speed must be a positive number")
+    if min_buffer < 0:
+        raise ValueError("The minimum buffer cannot be negative")
     tides = get_tide_levels(day=day).filter(pl.col("is_light"))
     start_id = (
         locations.filter(pl.col("name") == start_location).select("id").item()
@@ -215,12 +221,8 @@ def analyze_route_on_day(
         (pl.col("end_miles") >= first_distance)
         & (pl.col("start_miles") <= last_distance)
     ).with_columns(
-        ((pl.col("start_miles") - first_distance) / speed).alias(
-            "start_travel_time_hr"
-        ),
-        ((pl.col("end_miles") - first_distance) / speed).alias(
-            "end_travel_time_hr"
-        ),
+        start_travel_time_hr=(pl.col("start_miles") - first_distance) / speed,
+        end_travel_time_hr=(pl.col("end_miles") - first_distance) / speed,
     )
     possible_times = []
     for start_time in tides["timestamp"]:
@@ -232,9 +234,10 @@ def analyze_route_on_day(
         daily_tides = tides.filter(
             tides["timestamp"].is_between(start_time, end_time)
         ).with_columns(
-            (
-                (pl.col("timestamp") - start_time).dt.total_minutes() / 60.0
-            ).alias("travel_time_hr")
+            travel_time_hr=(
+                pl.col("timestamp") - start_time
+            ).dt.total_minutes()
+            / 60.0
         )
         tides_and_restrictions = (
             daily_tides.lazy()
