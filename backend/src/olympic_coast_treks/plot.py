@@ -25,7 +25,7 @@ def plot_tides_and_restrictions(
     start_location : str
         Starting location.
     end_location : str
-        Ending location. Must be on the locations in ``locations``.
+        Ending location.
     start_time : datetime
         The time to start hiking.
     speed : float
@@ -167,7 +167,7 @@ def plot_tides_and_restrictions(
         ),
         secondary_y=True,
     )
-    # Give list of lists, showing when start and ends being dark
+    # Give list of lists, showing when it starts and ends being dark
     night_ranges = (
         tides.with_row_index()
         .with_columns(pl.col("is_light").rle_id().alias("group"))
@@ -293,7 +293,8 @@ def plot_tides_and_restrictions(
             fig.update_layout(margin=dict(b=150))  # Increase bottom margin
             fig.add_annotation(
                 text=(
-                    '* From the National Park Service: "The Ozette River must be forded. <br>'
+                    '* From the National Park Service: "The Ozette River must "
+                    "be forded. <br>'
                     "The crossing may be impossible in winter and can be "
                     "hazardous year<br>round at high tide and/or after heavy "
                     'rain. It is recommended to ford<br>at low tide."'
