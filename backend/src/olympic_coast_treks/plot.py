@@ -293,8 +293,8 @@ def plot_tides_and_restrictions(
             fig.update_layout(margin=dict(b=150))  # Increase bottom margin
             fig.add_annotation(
                 text=(
-                    '* From the National Park Service: "The Ozette River must "
-                    "be forded. <br>'
+                    '* From the National Park Service: "The Ozette River must '
+                    "be forded. <br>"
                     "The crossing may be impossible in winter and can be "
                     "hazardous year<br>round at high tide and/or after heavy "
                     'rain. It is recommended to ford<br>at low tide."'

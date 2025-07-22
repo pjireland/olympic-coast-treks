@@ -57,14 +57,14 @@ def test_plot_tides_and_restrictions():
             speed=1.0,
             min_buffer=-1.0,
         )
-    fig = plot_tides_and_restrictions(
+    plot_tides_and_restrictions(
         start_location="Point of Arches",
         end_location="Cape Alava",
         start_time=datetime(year=2025, month=7, day=4, hour=4, minute=0),
         speed=0.1,  # Go very slowly to handle edge case of multiple days
     )
     # Reverse direction and test
-    fig = plot_tides_and_restrictions(
+    plot_tides_and_restrictions(
         start_location="Cedar Creek",
         end_location="Sand Point",
         start_time=datetime(year=2025, month=7, day=4, hour=4, minute=0),
