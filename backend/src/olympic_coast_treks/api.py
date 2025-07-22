@@ -45,7 +45,7 @@ def get_routes(
     min_daily_distance: float = 3.0,
     max_daily_distance: float = 10.0,
     speed: float = 1.0,
-    min_buffer: float = 2.0,
+    min_buffer: float = 1.0,
 ) -> list[Route]:
     """Get possible routes.
 
@@ -73,7 +73,7 @@ def get_routes(
     min_buffer : float
         The minimum allowable buffer in feet between the tidal restriction and
         the tide level. Because tide predictions are imprecise, it is
-        recommended to use a value of ``2`` feet or more.
+        recommended to use a value of ``1`` foot or more.
 
     Returns
     -------
