@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import './App.css';
 
 import Dropdown from './components/Dropdown';
@@ -59,6 +59,21 @@ function App() {
   const [expandedOptions, setExpandedOptions] = useState<Set<number>>(
     new Set(),
   );
+  // New state for expanded table rows
+  const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
+  // State for slider values for each row (in minutes from midnight)
+  const [rowSliderValues, setRowSliderValues] = useState<
+    Record<string, number>
+  >({});
+  // State for hiking speed values for each row
+  const [rowSpeedValues, setRowSpeedValues] = useState<Record<string, number>>(
+    {},
+  );
+  // State for plot API response
+  const [plotResponse, setPlotResponse] = useState<any>(null);
+  const [plotResponseRowKey, setPlotResponseRowKey] = useState<string | null>(
+    null,
+  );
 
   const handleDropdownSelect = (direction: string, section: string) => {
     setSelectedDirection(direction);
@@ -73,6 +88,11 @@ function App() {
     setError(null);
     setHasSearched(true);
     setExpandedOptions(new Set());
+    setExpandedRows(new Set()); // Reset expanded rows on new search
+    setRowSliderValues({}); // Reset slider values on new search
+    setRowSpeedValues({}); // Reset speed values on new search
+    setPlotResponse(null); // Reset plot response on new search
+    setPlotResponseRowKey(null);
 
     try {
       // Build query parameters for GET request
@@ -154,6 +174,127 @@ function App() {
       }
       return newSet;
     });
+  };
+
+  // New function to toggle row expansion
+  const toggleRow = (rowKey: string) => {
+    setExpandedRows((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(rowKey)) {
+        newSet.delete(rowKey);
+      } else {
+        newSet.add(rowKey);
+      }
+      return newSet;
+    });
+  };
+
+  // Helper function to convert time string to minutes from midnight
+  const timeToMinutes = (timeString: string): number => {
+    const date = new Date(timeString);
+    return date.getHours() * 60 + date.getMinutes();
+  };
+
+  // Helper function to convert minutes from midnight to time string
+  const minutesToTime = (minutes: number): string => {
+    const hours = Math.floor(minutes / 60);
+    const mins = minutes % 60;
+    const period = hours >= 12 ? 'PM' : 'AM';
+    const displayHours = hours === 0 ? 12 : hours > 12 ? hours - 12 : hours;
+    return `${displayHours}:${mins.toString().padStart(2, '0')} ${period}`;
+  };
+
+  // Helper function to round time to nearest 6-minute interval
+  const roundToNearestSixMinutes = (minutes: number): number => {
+    return Math.round(minutes / 6) * 6;
+  };
+
+  // Helper function to get default slider value for a row
+  const getDefaultSliderValue = (
+    startTimes: { first: string; last: string }[],
+  ): number => {
+    if (startTimes.length === 0) return 720; // Default to 12:00 PM if no times
+
+    // Use the first time window for default calculation
+    const firstWindow = startTimes[0];
+    const startMinutes = timeToMinutes(firstWindow.first);
+    const endMinutes = timeToMinutes(firstWindow.last);
+    const middleMinutes = (startMinutes + endMinutes) / 2;
+
+    return roundToNearestSixMinutes(middleMinutes);
+  };
+
+  // Function to update slider value for a specific row
+  const updateSliderValue = (rowKey: string, value: number) => {
+    setRowSliderValues((prev) => ({
+      ...prev,
+      [rowKey]: value,
+    }));
+  };
+
+  // Function to update speed value for a specific row
+  const updateSpeedValue = (rowKey: string, value: number) => {
+    setRowSpeedValues((prev) => ({
+      ...prev,
+      [rowKey]: value,
+    }));
+  };
+
+  // Function to handle plot route button click
+  const handlePlotRoute = async (rowKey: string, route: any) => {
+    const departureTime =
+      rowSliderValues[rowKey] || getDefaultSliderValue(route.start_times);
+    const hikingSpeed = rowSpeedValues[rowKey] || speed;
+
+    // Convert departureTime (minutes from midnight) to a full datetime string
+    const routeDate = new Date(route.date);
+    const hours = Math.floor(departureTime / 60);
+    const minutes = departureTime % 60;
+    routeDate.setHours(hours, minutes, 0, 0);
+    // Create timezone-naive datetime string (without Z suffix)
+    const startTimeISO = routeDate.toISOString().slice(0, -1);
+
+    try {
+      // Build query parameters for GET request
+      const params = new URLSearchParams();
+      params.set('start_time', startTimeISO);
+      params.set('start_location', route.start_location);
+      params.set('end_location', route.end_location);
+      params.set('speed', hikingSpeed.toString());
+
+      const apiUrl = `http://localhost:8000/plot?${params.toString()}`;
+      console.log('Making API call to:', apiUrl);
+
+      const response = await fetch(
+        `http://localhost:8000/plot?${params.toString()}`,
+        {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        },
+      );
+
+      if (!response.ok) {
+        throw new Error(
+          `API request failed: ${response.status} ${response.statusText}`,
+        );
+      }
+
+      const responseData = await response.json();
+      console.log('Plot API Response:', responseData);
+
+      // Store the response in state so we can display it
+      setPlotResponse(responseData);
+      setPlotResponseRowKey(rowKey);
+    } catch (error) {
+      console.error('Error calling plot API:', error);
+      setPlotResponse({
+        error:
+          error instanceof Error ? error.message : 'Unknown error occurred',
+      });
+      setPlotResponseRowKey(rowKey);
+    }
   };
 
   // Helper function to get unique locations for a set of routes
@@ -351,6 +492,7 @@ function App() {
                           <table className='w-full bg-white text-sm'>
                             <thead>
                               <tr className='text-left underline'>
+                                <th className='px-4 py-2 w-8'></th>
                                 <th className='px-4 py-2'>Date</th>
                                 <th className='px-4 py-2'>Start Location</th>
                                 <th className='px-4 py-2'>End Location</th>
@@ -361,69 +503,194 @@ function App() {
                             </thead>
                             <tbody>
                               {Object.values(mergedRoutes).map(
-                                (route, routeIndex) => (
-                                  <tr
-                                    key={`${route.campsite_combination}-${route.date}-${routeIndex}`}
-                                    className='hover:bg-gray-50'
-                                  >
-                                    <td className='px-4 py-2'>
-                                      {formatDate(route.date)}
-                                    </td>
-                                    <td className='px-4 py-2'>
-                                      {route.start_location}
-                                    </td>
-                                    <td className='px-4 py-2'>
-                                      {route.end_location}
-                                    </td>
-                                    <td className='px-4 py-2'>
-                                      {route.distance.toFixed(1)} mi
-                                    </td>
-                                    <td className='px-4 py-2'>
-                                      <div className='space-y-1'>
-                                        {route.start_times.map(
-                                          (timeWindow, timeIndex) => (
-                                            <div
-                                              key={timeIndex}
-                                              className='pb-1'
-                                            >
-                                              <div>
-                                                {formatTimeOnly(
-                                                  timeWindow.first,
-                                                )}{' '}
-                                                –{' '}
-                                                {formatTimeOnly(
-                                                  timeWindow.last,
-                                                )}
+                                (route, routeIndex) => {
+                                  const rowKey = `${route.campsite_combination}-${route.date}-${routeIndex}`;
+                                  const isRowExpanded =
+                                    expandedRows.has(rowKey);
+
+                                  return (
+                                    <React.Fragment key={rowKey}>
+                                      <tr className='hover:bg-gray-50'>
+                                        <td className='px-4 py-2'>
+                                          <button
+                                            onClick={() => toggleRow(rowKey)}
+                                            className='flex-shrink-0 w-5 h-5 p-0 text-lg font-bold text-gray-600 hover:text-gray-800 transition-colors flex items-center justify-center'
+                                          >
+                                            {isRowExpanded ? '−' : '+'}
+                                          </button>
+                                        </td>
+                                        <td className='px-4 py-2'>
+                                          {formatDate(route.date)}
+                                        </td>
+                                        <td className='px-4 py-2'>
+                                          {route.start_location}
+                                        </td>
+                                        <td className='px-4 py-2'>
+                                          {route.end_location}
+                                        </td>
+                                        <td className='px-4 py-2'>
+                                          {route.distance.toFixed(1)} mi
+                                        </td>
+                                        <td className='px-4 py-2'>
+                                          <div className='space-y-1'>
+                                            {route.start_times.map(
+                                              (timeWindow, timeIndex) => (
+                                                <div
+                                                  key={timeIndex}
+                                                  className='pb-1'
+                                                >
+                                                  <div>
+                                                    {formatTimeOnly(
+                                                      timeWindow.first,
+                                                    )}{' '}
+                                                    –{' '}
+                                                    {formatTimeOnly(
+                                                      timeWindow.last,
+                                                    )}
+                                                  </div>
+                                                </div>
+                                              ),
+                                            )}
+                                          </div>
+                                        </td>
+                                        <td className='px-4 py-2'>
+                                          <div className='space-y-1'>
+                                            {route.end_times.map(
+                                              (timeWindow, timeIndex) => (
+                                                <div
+                                                  key={timeIndex}
+                                                  className='pb-1'
+                                                >
+                                                  <div>
+                                                    {formatTimeOnly(
+                                                      timeWindow.first,
+                                                    )}{' '}
+                                                    –{' '}
+                                                    {formatTimeOnly(
+                                                      timeWindow.last,
+                                                    )}
+                                                  </div>
+                                                </div>
+                                              ),
+                                            )}
+                                          </div>
+                                        </td>
+                                      </tr>
+                                      {isRowExpanded && (
+                                        <tr className='bg-blue-50'>
+                                          <td className='px-4 py-3' colSpan={7}>
+                                            <div className='text-sm text-gray-700 space-y-3 pl-14 pr-6'>
+                                              <div className='flex gap-6 items-start'>
+                                                <div className='flex-1'>
+                                                  <label className='block font-medium mb-2'>
+                                                    Departure Time:{' '}
+                                                    {minutesToTime(
+                                                      rowSliderValues[rowKey] ||
+                                                        getDefaultSliderValue(
+                                                          route.start_times,
+                                                        ),
+                                                    )}
+                                                  </label>
+                                                  <input
+                                                    type='range'
+                                                    min='0'
+                                                    max='1434' // 11:54 PM = 23*60 + 54 = 1434 minutes
+                                                    step='6'
+                                                    value={
+                                                      rowSliderValues[rowKey] ||
+                                                      getDefaultSliderValue(
+                                                        route.start_times,
+                                                      )
+                                                    }
+                                                    onChange={(e) =>
+                                                      updateSliderValue(
+                                                        rowKey,
+                                                        parseInt(
+                                                          e.target.value,
+                                                        ),
+                                                      )
+                                                    }
+                                                    className='w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider'
+                                                  />
+                                                  <div className='flex justify-between text-xs text-gray-500 mt-1'>
+                                                    <span>12:00 AM</span>
+                                                    <span>11:54 PM</span>
+                                                  </div>
+                                                </div>
+                                                <div className='flex-1'>
+                                                  <label className='block font-medium mb-2'>
+                                                    Hiking Speed:{' '}
+                                                    {(
+                                                      rowSpeedValues[rowKey] ||
+                                                      speed
+                                                    ).toFixed(1)}{' '}
+                                                    mph
+                                                  </label>
+                                                  <input
+                                                    type='range'
+                                                    min='0.2'
+                                                    max='3.0'
+                                                    step='0.1'
+                                                    value={
+                                                      rowSpeedValues[rowKey] ||
+                                                      speed
+                                                    }
+                                                    onChange={(e) =>
+                                                      updateSpeedValue(
+                                                        rowKey,
+                                                        parseFloat(
+                                                          e.target.value,
+                                                        ),
+                                                      )
+                                                    }
+                                                    className='w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider'
+                                                  />
+                                                  <div className='flex justify-between text-xs text-gray-500 mt-1'>
+                                                    <span>0.2 mph</span>
+                                                    <span>3.0 mph</span>
+                                                  </div>
+                                                </div>
+                                                <div
+                                                  style={{
+                                                    marginTop: '1rem',
+                                                  }}
+                                                >
+                                                  <button
+                                                    onClick={() =>
+                                                      handlePlotRoute(
+                                                        rowKey,
+                                                        route,
+                                                      )
+                                                    }
+                                                    className='px-4 py-2 bg-blue-500 text-white rounded-md font-semibold hover:bg-blue-600 transition-colors'
+                                                  >
+                                                    Plot route
+                                                  </button>
+                                                </div>
                                               </div>
-                                            </div>
-                                          ),
-                                        )}
-                                      </div>
-                                    </td>
-                                    <td className='px-4 py-2'>
-                                      <div className='space-y-1'>
-                                        {route.end_times.map(
-                                          (timeWindow, timeIndex) => (
-                                            <div
-                                              key={timeIndex}
-                                              className='pb-1'
-                                            >
-                                              <div>
-                                                {formatTimeOnly(
-                                                  timeWindow.first,
-                                                )}{' '}
-                                                –{' '}
-                                                {formatTimeOnly(
-                                                  timeWindow.last,
+                                              {/* Display API response if available for this row */}
+                                              {plotResponseRowKey === rowKey &&
+                                                plotResponse && (
+                                                  <div className='mt-4 p-3 bg-gray-100 rounded-md'>
+                                                    <h4 className='font-medium mb-2'>
+                                                      API Response:
+                                                    </h4>
+                                                    <pre className='text-xs overflow-x-auto whitespace-pre-wrap'>
+                                                      {JSON.stringify(
+                                                        plotResponse,
+                                                        null,
+                                                        2,
+                                                      )}
+                                                    </pre>
+                                                  </div>
                                                 )}
-                                              </div>
                                             </div>
-                                          ),
-                                        )}
-                                      </div>
-                                    </td>
-                                  </tr>
-                                ),
+                                          </td>
+                                        </tr>
+                                      )}
+                                    </React.Fragment>
+                                  );
+                                },
                               )}
                             </tbody>
                           </table>

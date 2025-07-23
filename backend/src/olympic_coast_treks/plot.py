@@ -124,12 +124,16 @@ def plot_tides_and_restrictions(
             closed="none",
         )
     )
-    xaxis_min = np.floor(
-        min(tides["height_ft"].min(), restrictions["restriction_ft"].min())
-    )
-    xaxis_max = np.ceil(
-        max(tides["height_ft"].max(), restrictions["restriction_ft"].max())
-    )
+    if restrictions.is_empty():
+        xaxis_min = tides["height_ft"].min()
+        xaxis_max = tides["height_ft"].max()
+    else:
+        xaxis_min = np.floor(
+            min(tides["height_ft"].min(), restrictions["restriction_ft"].min())
+        )
+        xaxis_max = np.ceil(
+            max(tides["height_ft"].max(), restrictions["restriction_ft"].max())
+        )
     fig = make_subplots(specs=[[{"secondary_y": True}]])
     fig.add_trace(
         go.Scatter(
