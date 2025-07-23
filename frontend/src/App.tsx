@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import Plot from 'react-plotly.js';
 import './App.css';
 
 import Dropdown from './components/Dropdown';
@@ -242,6 +243,8 @@ function App() {
 
   // Function to handle plot route button click
   const handlePlotRoute = async (rowKey: string, route: any) => {
+    console.log('current value:', rowSliderValues[rowKey]);
+    console.log('default value:', getDefaultSliderValue(route.start_times));
     const departureTime =
       rowSliderValues[rowKey] || getDefaultSliderValue(route.start_times);
     const hikingSpeed = rowSpeedValues[rowKey] || speed;
@@ -250,14 +253,25 @@ function App() {
     const routeDate = new Date(route.date);
     const hours = Math.floor(departureTime / 60);
     const minutes = departureTime % 60;
+    console.log(hours);
+    console.log(minutes);
     routeDate.setHours(hours, minutes, 0, 0);
-    // Create timezone-naive datetime string (without Z suffix)
-    const startTimeISO = routeDate.toISOString().slice(0, -1);
-
+    const pad = (n: number) => n.toString().padStart(2, '0');
+    const startTime =
+      routeDate.getFullYear() +
+      '-' +
+      pad(routeDate.getMonth()) +
+      '-' +
+      pad(routeDate.getDate()) +
+      'T' +
+      pad(routeDate.getHours()) +
+      ':' +
+      pad(routeDate.getMinutes());
+    console.log('Formatted start time:', startTime);
     try {
       // Build query parameters for GET request
       const params = new URLSearchParams();
-      params.set('start_time', startTimeISO);
+      params.set('start_time', startTime);
       params.set('start_location', route.start_location);
       params.set('end_location', route.end_location);
       params.set('speed', hikingSpeed.toString());
@@ -672,16 +686,25 @@ function App() {
                                               {plotResponseRowKey === rowKey &&
                                                 plotResponse && (
                                                   <div className='mt-4 p-3 bg-gray-100 rounded-md'>
-                                                    <h4 className='font-medium mb-2'>
-                                                      API Response:
-                                                    </h4>
-                                                    <pre className='text-xs overflow-x-auto whitespace-pre-wrap'>
-                                                      {JSON.stringify(
-                                                        plotResponse,
-                                                        null,
-                                                        2,
-                                                      )}
-                                                    </pre>
+                                                    <div className='mt-4'>
+                                                      <Plot
+                                                        data={plotResponse.data}
+                                                        layout={{
+                                                          ...plotResponse.layout,
+                                                          autosize: true,
+                                                          height: 400,
+                                                          margin: {
+                                                            t: 30,
+                                                            r: 30,
+                                                            b: 40,
+                                                            l: 40,
+                                                          },
+                                                        }}
+                                                        config={{
+                                                          responsive: true,
+                                                        }}
+                                                      />
+                                                    </div>
                                                   </div>
                                                 )}
                                             </div>
