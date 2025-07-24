@@ -273,7 +273,6 @@ function App() {
       params.set('end_location', route.end_location);
       params.set('speed', hikingSpeed.toString());
 
-      const apiUrl = `http://localhost:8000/plot?${params.toString()}`;
       const response = await fetch(
         `http://localhost:8000/plot?${params.toString()}`,
         {
@@ -342,17 +341,19 @@ function App() {
   return (
     <main className='min-h-screen bg-gray-100 p-8'>
       <div className='w-fit mx-auto bg-white p-6 rounded-lg shadow-md text-left'>
-        <Dropdown
-          initialDirection={selectedDirection}
-          initialSection={selectedSection}
-          onSelect={handleDropdownSelect}
-        />
-        <DateRangePicker
-          startDate={startDate}
-          setStartDate={setStartDate}
-          endDate={endDate}
-          setEndDate={setEndDate}
-        />
+        <div className='flex gap-6 items-start'>
+          <Dropdown
+            initialDirection={selectedDirection}
+            initialSection={selectedSection}
+            onSelect={handleDropdownSelect}
+          />
+          <DateRangePicker
+            startDate={startDate}
+            setStartDate={setStartDate}
+            endDate={endDate}
+            setEndDate={setEndDate}
+          />
+        </div>
         <HikingSpeedSlider speed={speed} setSpeed={setSpeed} />
         <DistanceRangeSlider
           minDistance={minDistance}
