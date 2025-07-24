@@ -293,14 +293,15 @@ function App() {
       const responseData = await response.json();
 
       // Store the response in state so we can display it
-      setPlotResponses((prev) => [
-        ...prev,
-        {
-          rowKey,
-          data: responseData.data,
-          layout: responseData.layout,
-        },
-      ]);
+      setPlotResponses((prev) => {
+        const filteredResponses = prev.filter(
+          (entry) => entry.rowKey !== rowKey,
+        );
+        return [
+          ...filteredResponses,
+          { rowKey, data: responseData.data, layout: responseData.layout },
+        ];
+      });
     } catch (error) {
       console.error('Error calling plot API:', error);
       setPlotResponses((prev) => [
