@@ -71,10 +71,8 @@ function App() {
     {},
   );
   // State for plot API response
-  const [plotResponse, setPlotResponse] = useState<any>(null);
-  const [plotResponseRowKey, setPlotResponseRowKey] = useState<string | null>(
-    null,
-  );
+  type PlotEntry = { rowKey: string; data: any[]; layout: any };
+  const [plotResponses, setPlotResponses] = useState<PlotEntry[]>([]);
 
   const handleDropdownSelect = (direction: string, section: string) => {
     setSelectedDirection(direction);
@@ -92,8 +90,7 @@ function App() {
     setExpandedRows(new Set()); // Reset expanded rows on new search
     setRowSliderValues({}); // Reset slider values on new search
     setRowSpeedValues({}); // Reset speed values on new search
-    setPlotResponse(null); // Reset plot response on new search
-    setPlotResponseRowKey(null);
+    setPlotResponses([]); // Reset plot response on new search
 
     try {
       // Build query parameters for GET request
@@ -243,8 +240,6 @@ function App() {
 
   // Function to handle plot route button click
   const handlePlotRoute = async (rowKey: string, route: any) => {
-    console.log('current value:', rowSliderValues[rowKey]);
-    console.log('default value:', getDefaultSliderValue(route.start_times));
     const departureTime =
       rowSliderValues[rowKey] || getDefaultSliderValue(route.start_times);
     const hikingSpeed = rowSpeedValues[rowKey] || speed;
@@ -253,8 +248,6 @@ function App() {
     const routeDate = new Date(route.date);
     const hours = Math.floor(departureTime / 60);
     const minutes = departureTime % 60;
-    console.log(hours);
-    console.log(minutes);
     routeDate.setHours(hours, minutes, 0, 0);
     const pad = (n: number) => n.toString().padStart(2, '0');
     const startTime =
@@ -267,7 +260,6 @@ function App() {
       pad(routeDate.getHours()) +
       ':' +
       pad(routeDate.getMinutes());
-    console.log('Formatted start time:', startTime);
     try {
       // Build query parameters for GET request
       const params = new URLSearchParams();
@@ -277,8 +269,6 @@ function App() {
       params.set('speed', hikingSpeed.toString());
 
       const apiUrl = `http://localhost:8000/plot?${params.toString()}`;
-      console.log('Making API call to:', apiUrl);
-
       const response = await fetch(
         `http://localhost:8000/plot?${params.toString()}`,
         {
@@ -296,18 +286,38 @@ function App() {
       }
 
       const responseData = await response.json();
-      console.log('Plot API Response:', responseData);
 
       // Store the response in state so we can display it
-      setPlotResponse(responseData);
-      setPlotResponseRowKey(rowKey);
+      setPlotResponses((prev) => [
+        ...prev,
+        {
+          rowKey,
+          data: responseData.data,
+          layout: responseData.layout,
+        },
+      ]);
     } catch (error) {
       console.error('Error calling plot API:', error);
-      setPlotResponse({
-        error:
-          error instanceof Error ? error.message : 'Unknown error occurred',
-      });
-      setPlotResponseRowKey(rowKey);
+      setPlotResponses((prev) => [
+        ...prev.filter((entry) => entry.rowKey !== rowKey),
+        {
+          rowKey,
+          data: [],
+          layout: {
+            title: 'Error loading plot',
+            annotations: [
+              {
+                text:
+                  error instanceof Error
+                    ? error.message
+                    : 'Unknown error occurred',
+                showarrow: false,
+                font: { size: 16, color: 'red' },
+              },
+            ],
+          },
+        },
+      ]);
     }
   };
 
@@ -682,15 +692,17 @@ function App() {
                                                   </button>
                                                 </div>
                                               </div>
-                                              {/* Display API response if available for this row */}
-                                              {plotResponseRowKey === rowKey &&
-                                                plotResponse && (
-                                                  <div className='mt-4 p-3 bg-gray-100 rounded-md'>
-                                                    <div className='mt-4'>
+                                              {plotResponses.map(
+                                                (entry, i) =>
+                                                  entry.rowKey === rowKey && (
+                                                    <div
+                                                      key={i}
+                                                      className='mt-4 p-3 bg-gray-100 rounded-md'
+                                                    >
                                                       <Plot
-                                                        data={plotResponse.data}
+                                                        data={entry.data}
                                                         layout={{
-                                                          ...plotResponse.layout,
+                                                          ...entry.layout,
                                                           autosize: true,
                                                           height: 400,
                                                           margin: {
@@ -705,8 +717,8 @@ function App() {
                                                         }}
                                                       />
                                                     </div>
-                                                  </div>
-                                                )}
+                                                  ),
+                                              )}
                                             </div>
                                           </td>
                                         </tr>
