@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import Plot from 'react-plotly.js';
 import './App.css';
 
 import Dropdown from './components/Dropdown';
@@ -70,10 +71,8 @@ function App() {
     {},
   );
   // State for plot API response
-  const [plotResponse, setPlotResponse] = useState<any>(null);
-  const [plotResponseRowKey, setPlotResponseRowKey] = useState<string | null>(
-    null,
-  );
+  type PlotEntry = { rowKey: string; data: any[]; layout: any };
+  const [plotResponses, setPlotResponses] = useState<PlotEntry[]>([]);
 
   const handleDropdownSelect = (direction: string, section: string) => {
     setSelectedDirection(direction);
@@ -91,8 +90,7 @@ function App() {
     setExpandedRows(new Set()); // Reset expanded rows on new search
     setRowSliderValues({}); // Reset slider values on new search
     setRowSpeedValues({}); // Reset speed values on new search
-    setPlotResponse(null); // Reset plot response on new search
-    setPlotResponseRowKey(null);
+    setPlotResponses([]); // Reset plot response on new search
 
     try {
       // Build query parameters for GET request
@@ -154,7 +152,12 @@ function App() {
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString();
+    const parts = dateString.split('-');
+    return new Date(
+      parseInt(parts[0]),
+      parseInt(parts[1]) - 1,
+      parseInt(parts[2]),
+    ).toLocaleDateString();
   };
 
   const formatTimeOnly = (dateTimeString: string) => {
@@ -251,20 +254,26 @@ function App() {
     const hours = Math.floor(departureTime / 60);
     const minutes = departureTime % 60;
     routeDate.setHours(hours, minutes, 0, 0);
-    // Create timezone-naive datetime string (without Z suffix)
-    const startTimeISO = routeDate.toISOString().slice(0, -1);
-
+    const pad = (n: number) => n.toString().padStart(2, '0');
+    const startTime =
+      routeDate.getFullYear() +
+      '-' +
+      pad(routeDate.getMonth() + 1) +
+      '-' +
+      pad(routeDate.getDate() + 1) +
+      'T' +
+      pad(routeDate.getHours()) +
+      ':' +
+      pad(routeDate.getMinutes());
     try {
       // Build query parameters for GET request
       const params = new URLSearchParams();
-      params.set('start_time', startTimeISO);
+      params.set('start_time', startTime);
       params.set('start_location', route.start_location);
       params.set('end_location', route.end_location);
       params.set('speed', hikingSpeed.toString());
 
       const apiUrl = `http://localhost:8000/plot?${params.toString()}`;
-      console.log('Making API call to:', apiUrl);
-
       const response = await fetch(
         `http://localhost:8000/plot?${params.toString()}`,
         {
@@ -282,18 +291,38 @@ function App() {
       }
 
       const responseData = await response.json();
-      console.log('Plot API Response:', responseData);
 
       // Store the response in state so we can display it
-      setPlotResponse(responseData);
-      setPlotResponseRowKey(rowKey);
+      setPlotResponses((prev) => [
+        ...prev,
+        {
+          rowKey,
+          data: responseData.data,
+          layout: responseData.layout,
+        },
+      ]);
     } catch (error) {
       console.error('Error calling plot API:', error);
-      setPlotResponse({
-        error:
-          error instanceof Error ? error.message : 'Unknown error occurred',
-      });
-      setPlotResponseRowKey(rowKey);
+      setPlotResponses((prev) => [
+        ...prev.filter((entry) => entry.rowKey !== rowKey),
+        {
+          rowKey,
+          data: [],
+          layout: {
+            title: 'Error loading plot',
+            annotations: [
+              {
+                text:
+                  error instanceof Error
+                    ? error.message
+                    : 'Unknown error occurred',
+                showarrow: false,
+                font: { size: 16, color: 'red' },
+              },
+            ],
+          },
+        },
+      ]);
     }
   };
 
@@ -668,22 +697,33 @@ function App() {
                                                   </button>
                                                 </div>
                                               </div>
-                                              {/* Display API response if available for this row */}
-                                              {plotResponseRowKey === rowKey &&
-                                                plotResponse && (
-                                                  <div className='mt-4 p-3 bg-gray-100 rounded-md'>
-                                                    <h4 className='font-medium mb-2'>
-                                                      API Response:
-                                                    </h4>
-                                                    <pre className='text-xs overflow-x-auto whitespace-pre-wrap'>
-                                                      {JSON.stringify(
-                                                        plotResponse,
-                                                        null,
-                                                        2,
-                                                      )}
-                                                    </pre>
-                                                  </div>
-                                                )}
+                                              {plotResponses.map(
+                                                (entry, i) =>
+                                                  entry.rowKey === rowKey && (
+                                                    <div
+                                                      key={i}
+                                                      className='mt-4 p-3 bg-gray-100 rounded-md'
+                                                    >
+                                                      <Plot
+                                                        data={entry.data}
+                                                        layout={{
+                                                          ...entry.layout,
+                                                          autosize: true,
+                                                          height: 400,
+                                                          margin: {
+                                                            t: 30,
+                                                            r: 30,
+                                                            b: 40,
+                                                            l: 40,
+                                                          },
+                                                        }}
+                                                        config={{
+                                                          responsive: true,
+                                                        }}
+                                                      />
+                                                    </div>
+                                                  ),
+                                              )}
                                             </div>
                                           </td>
                                         </tr>
