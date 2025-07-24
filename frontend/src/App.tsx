@@ -152,7 +152,12 @@ function App() {
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString();
+    const parts = dateString.split('-');
+    return new Date(
+      parseInt(parts[0]),
+      parseInt(parts[1]) - 1,
+      parseInt(parts[2]),
+    ).toLocaleDateString();
   };
 
   const formatTimeOnly = (dateTimeString: string) => {
@@ -253,9 +258,9 @@ function App() {
     const startTime =
       routeDate.getFullYear() +
       '-' +
-      pad(routeDate.getMonth()) +
+      pad(routeDate.getMonth() + 1) +
       '-' +
-      pad(routeDate.getDate()) +
+      pad(routeDate.getDate() + 1) +
       'T' +
       pad(routeDate.getHours()) +
       ':' +
@@ -268,7 +273,6 @@ function App() {
       params.set('end_location', route.end_location);
       params.set('speed', hikingSpeed.toString());
 
-      const apiUrl = `http://localhost:8000/plot?${params.toString()}`;
       const response = await fetch(
         `http://localhost:8000/plot?${params.toString()}`,
         {
@@ -288,14 +292,15 @@ function App() {
       const responseData = await response.json();
 
       // Store the response in state so we can display it
-      setPlotResponses((prev) => [
-        ...prev,
-        {
-          rowKey,
-          data: responseData.data,
-          layout: responseData.layout,
-        },
-      ]);
+      setPlotResponses((prev) => {
+        const filteredResponses = prev.filter(
+          (entry) => entry.rowKey !== rowKey,
+        );
+        return [
+          ...filteredResponses,
+          { rowKey, data: responseData.data, layout: responseData.layout },
+        ];
+      });
     } catch (error) {
       console.error('Error calling plot API:', error);
       setPlotResponses((prev) => [
@@ -336,17 +341,19 @@ function App() {
   return (
     <main className='min-h-screen bg-gray-100 p-8'>
       <div className='w-fit mx-auto bg-white p-6 rounded-lg shadow-md text-left'>
-        <Dropdown
-          initialDirection={selectedDirection}
-          initialSection={selectedSection}
-          onSelect={handleDropdownSelect}
-        />
-        <DateRangePicker
-          startDate={startDate}
-          setStartDate={setStartDate}
-          endDate={endDate}
-          setEndDate={setEndDate}
-        />
+        <div className='flex gap-6 items-start'>
+          <Dropdown
+            initialDirection={selectedDirection}
+            initialSection={selectedSection}
+            onSelect={handleDropdownSelect}
+          />
+          <DateRangePicker
+            startDate={startDate}
+            setStartDate={setStartDate}
+            endDate={endDate}
+            setEndDate={setEndDate}
+          />
+        </div>
         <HikingSpeedSlider speed={speed} setSpeed={setSpeed} />
         <DistanceRangeSlider
           minDistance={minDistance}

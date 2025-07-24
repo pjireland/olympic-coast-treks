@@ -65,7 +65,7 @@ const DateRangePicker = ({
             value={startDate}
             onChange={handleStartDateChange}
             min={today}
-            className='w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500'
+            className='w-full h-10 px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-gray-800'
           />
         </div>
         <div className='flex-1'>
@@ -79,7 +79,7 @@ const DateRangePicker = ({
             min={getMinEndDate(startDate)}
             max={getMaxEndDate(startDate)}
             disabled={!startDate}
-            className='w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed'
+            className='w-full h-10 px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-gray-800 disabled:bg-gray-100 disabled:cursor-not-allowed'
           />
         </div>
       </div>

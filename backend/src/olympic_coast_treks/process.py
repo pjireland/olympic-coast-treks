@@ -164,7 +164,7 @@ def analyze_route_on_day(
     day: date,
     locations: pl.DataFrame,
     restrictions: pl.DataFrame,
-    speed: float,
+    speed: float = 1.0,
     min_buffer: float = 1.0,
 ) -> pl.DataFrame:
     """Analyze the specified route on the specified day.
@@ -293,6 +293,7 @@ def analyze_route_on_day(
         )
     possible_times = (
         pl.DataFrame(possible_times)
+        .sort("start_time")
         .with_columns(pl.col("passable").rle_id().alias("run_id"))
         .filter(pl.col("passable"))
     )
