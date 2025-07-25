@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import Plot from 'react-plotly.js';
 import './App.css';
+import type { PlotData, Layout } from 'plotly.js-basic-dist';
 
 import Dropdown from './components/Dropdown';
 import DateRangePicker from './components/DateRangePicker';
@@ -71,8 +72,18 @@ function App() {
     {},
   );
   // State for plot API response
-  type PlotEntry = { rowKey: string; data: any[]; layout: any };
+  type PlotEntry = { rowKey: string; data: PlotData[]; layout: Layout };
   const [plotResponses, setPlotResponses] = useState<PlotEntry[]>([]);
+
+  type MergedRoute = {
+    campsite_combination: number;
+    date: string;
+    start_location: string;
+    end_location: string;
+    distance: number;
+    start_times: { first: string; last: string }[];
+    end_times: { first: string; last: string }[];
+  };
 
   const handleDropdownSelect = (direction: string, section: string) => {
     setSelectedDirection(direction);
@@ -244,7 +255,7 @@ function App() {
   };
 
   // Function to handle plot route button click
-  const handlePlotRoute = async (rowKey: string, route: any) => {
+  const handlePlotRoute = async (rowKey: string, route: MergedRoute) => {
     const departureTime =
       rowSliderValues[rowKey] || getDefaultSliderValue(route.start_times);
     const hikingSpeed = rowSpeedValues[rowKey] || speed;
@@ -452,18 +463,7 @@ function App() {
                       });
                       return acc;
                     },
-                    {} as Record<
-                      string,
-                      {
-                        campsite_combination: number;
-                        date: string;
-                        start_location: string;
-                        end_location: string;
-                        distance: number;
-                        start_times: { first: string; last: string }[];
-                        end_times: { first: string; last: string }[];
-                      }
-                    >,
+                    {} as Record<string, MergedRoute>,
                   );
 
                   return (
