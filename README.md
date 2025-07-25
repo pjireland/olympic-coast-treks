@@ -1,6 +1,6 @@
 # Olympic Coast Treks
 
-The `olympic-coast-treks` package provides a frontend (TODO) and backend
+The `olympic-coast-treks` package provides a frontend and backend
 for planning multi-night backpacking treks along the the Olympic Coast
 in Washington, taking into account route information, tide levels,
 tidal restrictions, and sunrise and sunset times.
@@ -37,6 +37,7 @@ Then navigate to the `backend` subdirectory within `olympic-coast-treks`.
 ### Set up environment
 
 From within the `backend` subdirectory:
+
 ```bash
 uv sync
 ```
@@ -44,6 +45,7 @@ uv sync
 ### Run unit tests
 
 From within the `backend` subdirectory:
+
 ```bash
 make test
 ```
@@ -51,6 +53,7 @@ make test
 ### Run style checks and fixes
 
 From within the `backend` subdirectory:
+
 ```bash
 make style
 ```
@@ -58,6 +61,7 @@ make style
 ### Starting a local API
 
 From within the `backend` subdirectory:
+
 ```bash
 make api
 ```
