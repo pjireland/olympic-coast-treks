@@ -72,7 +72,11 @@ function App() {
     {},
   );
   // State for plot API response
-  type PlotEntry = { rowKey: string; data: PlotData[]; layout: Layout };
+  type PlotEntry = {
+    rowKey: string;
+    data: PlotData[];
+    layout: Partial<Layout>;
+  };
   const [plotResponses, setPlotResponses] = useState<PlotEntry[]>([]);
 
   type MergedRoute = {
@@ -320,7 +324,9 @@ function App() {
           rowKey,
           data: [],
           layout: {
-            title: 'Error loading plot',
+            title: {
+              text: 'Error loading plot',
+            },
             annotations: [
               {
                 text:
@@ -351,400 +357,425 @@ function App() {
 
   return (
     <main className='min-h-screen bg-gray-100 p-8'>
-      <div className='w-fit mx-auto bg-white p-6 rounded-lg shadow-md text-left'>
-        <div className='flex gap-6 items-start'>
-          <Dropdown
-            initialDirection={selectedDirection}
-            initialSection={selectedSection}
-            onSelect={handleDropdownSelect}
+      <h1 className='text-4xl font-bold text-gray-800 text-center mb-8'>
+        Olympic Coast Trek Planner
+      </h1>
+      <div className='w-fit mx-auto space-y-0'>
+        <div className='bg-white p-6 rounded-t-lg shadow-md text-left'>
+          <div className='flex gap-6 items-start'>
+            <Dropdown
+              initialDirection={selectedDirection}
+              initialSection={selectedSection}
+              onSelect={handleDropdownSelect}
+            />
+            <DateRangePicker
+              startDate={startDate}
+              setStartDate={setStartDate}
+              endDate={endDate}
+              setEndDate={setEndDate}
+            />
+          </div>
+          <HikingSpeedSlider speed={speed} setSpeed={setSpeed} />
+          <DistanceRangeSlider
+            minDistance={minDistance}
+            setMinDistance={setMinDistance}
+            maxDistance={maxDistance}
+            setMaxDistance={setMaxDistance}
           />
-          <DateRangePicker
-            startDate={startDate}
-            setStartDate={setStartDate}
-            endDate={endDate}
-            setEndDate={setEndDate}
-          />
+          <TidalBufferSlider buffer={buffer} setBuffer={setBuffer} />
+          <div className='w-fit rounded-lg text-left'>
+            <button
+              onClick={callAPI}
+              disabled={!isValidInput || isLoading}
+              className={`px-4 py-2 rounded-md font-semibold ${
+                isValidInput && !isLoading
+                  ? 'bg-blue-500 text-white hover:bg-blue-600 cursor-pointer'
+                  : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+              }`}
+            >
+              {isLoading ? 'Searching...' : 'Find routes'}
+            </button>
+          </div>
         </div>
-        <HikingSpeedSlider speed={speed} setSpeed={setSpeed} />
-        <DistanceRangeSlider
-          minDistance={minDistance}
-          setMinDistance={setMinDistance}
-          maxDistance={maxDistance}
-          setMaxDistance={setMaxDistance}
-        />
-        <TidalBufferSlider buffer={buffer} setBuffer={setBuffer} />
-        <div className='w-fit rounded-lg text-left'>
-          <button
-            onClick={callAPI}
-            disabled={!isValidInput || isLoading}
-            className={`px-4 py-2 rounded-md font-semibold ${
-              isValidInput && !isLoading
-                ? 'bg-blue-500 text-white hover:bg-blue-600 cursor-pointer'
-                : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-            }`}
-          >
-            {isLoading ? 'Searching...' : 'Find routes'}
-          </button>
-        </div>
-      </div>
 
-      {/* Results Section */}
-      {hasSearched && (
-        <div className='w-full max-w-6xl mx-auto mt-8 bg-white p-6 rounded-lg shadow-md text-left'>
-          <h2 className='text-2xl font-bold text-gray-800 mb-4'>
-            Possible routes
-          </h2>
+        {/* Results Section */}
+        {hasSearched && (
+          <div className='bg-white p-6 pt-4 rounded-b-lg shadow-md text-left'>
+            <h2 className='text-2xl font-bold text-gray-800 mb-4'>
+              Possible routes
+            </h2>
 
-          {error && (
-            <div className='bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4'>
-              <strong>Error:</strong> {error}
-            </div>
-          )}
+            {error && (
+              <div className='bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4'>
+                <strong>Error:</strong> {error}
+              </div>
+            )}
 
-          {isLoading && (
-            <div className='text-center py-8'>
-              <div className='inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500'></div>
-              <p className='mt-2 text-gray-600'>Searching for routes...</p>
-            </div>
-          )}
+            {isLoading && (
+              <div className='text-center py-8'>
+                <div className='inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500'></div>
+                <p className='mt-2 text-gray-600'>Searching for routes...</p>
+              </div>
+            )}
 
-          {!isLoading && !error && results.length === 0 && (
-            <div className='text-center py-8 text-gray-500'>
-              <p>No routes found for your search criteria.</p>
-              <p className='text-sm mt-2'>
-                Try adjusting your parameters and search again.
-              </p>
-            </div>
-          )}
+            {!isLoading && !error && results.length === 0 && (
+              <div className='text-center py-8 text-gray-500'>
+                <p>No routes found for your search criteria.</p>
+                <p className='text-sm mt-2'>
+                  Try adjusting your parameters and search again.
+                </p>
+              </div>
+            )}
 
-          {!isLoading && !error && results.length > 0 && (
-            <div className='space-y-8'>
-              {/* Group routes by campsite_combination */}
-              {Object.entries(
-                results.reduce(
-                  (groups, route) => {
-                    const key = route.campsite_combination;
-                    if (!groups[key]) {
-                      groups[key] = [];
-                    }
-                    groups[key].push(route);
-                    return groups;
-                  },
-                  {} as Record<number, Route[]>,
-                ),
-              )
-                .sort(([a], [b]) => Number(a) - Number(b)) // Sort by campsite combination number
-                .map(([campsiteCombination, routes], index) => {
-                  // Get unique locations for this campsite combination
-                  const uniqueLocations = getUniqueLocations(routes);
-
-                  // Merge duplicate rows with same campsite_combination, date, start_location, end_location
-                  const mergedRoutes = routes.reduce(
-                    (acc, route) => {
-                      const key = `${route.campsite_combination}-${route.date}-${route.start_location}-${route.end_location}`;
-                      if (!acc[key]) {
-                        acc[key] = {
-                          campsite_combination: route.campsite_combination,
-                          date: route.date,
-                          start_location: route.start_location,
-                          end_location: route.end_location,
-                          distance: route.distance,
-                          start_times: [],
-                          end_times: [],
-                        };
+            {!isLoading && !error && results.length > 0 && (
+              <div className='space-y-8'>
+                {/* Group routes by campsite_combination */}
+                {Object.entries(
+                  results.reduce(
+                    (groups, route) => {
+                      const key = route.campsite_combination;
+                      if (!groups[key]) {
+                        groups[key] = [];
                       }
-                      acc[key].start_times.push({
-                        first: route.first_possible_start,
-                        last: route.last_possible_start,
-                      });
-                      acc[key].end_times.push({
-                        first: route.first_possible_end,
-                        last: route.last_possible_end,
-                      });
-                      return acc;
+                      groups[key].push(route);
+                      return groups;
                     },
-                    {} as Record<string, MergedRoute>,
-                  );
+                    {} as Record<number, Route[]>,
+                  ),
+                )
+                  .sort(([a], [b]) => Number(a) - Number(b)) // Sort by campsite combination number
+                  .map(([campsiteCombination, routes], index) => {
+                    // Get unique locations for this campsite combination
+                    const uniqueLocations = getUniqueLocations(routes);
 
-                  return (
-                    <div
-                      key={campsiteCombination}
-                      className='bg-gray-50 p-4 rounded-lg'
-                    >
-                      <div className='flex items-center gap-1 mb-2'>
-                        <button
-                          onClick={() =>
-                            toggleOption(Number(campsiteCombination))
-                          }
-                          className='flex-shrink-0 w-5 h-5 p-0 text-lg font-bold text-gray-600 hover:text-gray-800 transition-colors flex items-center justify-center'
-                        >
-                          {expandedOptions.has(Number(campsiteCombination))
-                            ? '−'
-                            : '+'}
-                        </button>
-                        <h3 className='text-xl font-semibold text-gray-800'>
-                          Option {index + 1}
-                        </h3>
-                      </div>
-                      <div className='mb-4'>
-                        <div className='flex items-center gap-2'>
-                          <p className='text-sm text-gray-600'>Campsites:</p>
-                          <div className='flex flex-wrap gap-2'>
-                            {uniqueLocations.map((location, locIndex) => (
-                              <span
-                                key={locIndex}
-                                className='bg-blue-100 text-blue-800 text-sm px-2 py-1 rounded-full'
-                              >
-                                {location}
-                              </span>
-                            ))}
-                          </div>
+                    // Merge duplicate rows with same campsite_combination, date, start_location, end_location
+                    const mergedRoutes = routes.reduce(
+                      (acc, route) => {
+                        const key = `${route.campsite_combination}-${route.date}-${route.start_location}-${route.end_location}`;
+                        if (!acc[key]) {
+                          acc[key] = {
+                            campsite_combination: route.campsite_combination,
+                            date: route.date,
+                            start_location: route.start_location,
+                            end_location: route.end_location,
+                            distance: route.distance,
+                            start_times: [],
+                            end_times: [],
+                          };
+                        }
+                        acc[key].start_times.push({
+                          first: route.first_possible_start,
+                          last: route.last_possible_start,
+                        });
+                        acc[key].end_times.push({
+                          first: route.first_possible_end,
+                          last: route.last_possible_end,
+                        });
+                        return acc;
+                      },
+                      {} as Record<string, MergedRoute>,
+                    );
+
+                    return (
+                      <div
+                        key={campsiteCombination}
+                        className='bg-gray-50 p-4 rounded-lg'
+                      >
+                        <div className='flex items-center gap-1 mb-2'>
+                          <button
+                            onClick={() =>
+                              toggleOption(Number(campsiteCombination))
+                            }
+                            className='flex-shrink-0 w-5 h-5 p-0 text-lg font-bold text-gray-600 hover:text-gray-800 transition-colors flex items-center justify-center'
+                          >
+                            {expandedOptions.has(Number(campsiteCombination))
+                              ? '−'
+                              : '+'}
+                          </button>
+                          <h3 className='text-xl font-semibold text-gray-800'>
+                            Option {index + 1}
+                          </h3>
                         </div>
-                        <div className='flex items-center gap-2 mt-2'>
-                          <p className='text-sm text-gray-600'>
-                            Daily distances:
-                          </p>
-                          <div className='flex flex-wrap gap-2'>
-                            {Object.values(mergedRoutes).map(
-                              (route, routeIndex) => (
+                        <div className='mb-4'>
+                          <div className='flex items-center gap-2'>
+                            <p className='text-sm text-gray-600'>Campsites:</p>
+                            <div className='flex flex-wrap gap-2'>
+                              {uniqueLocations.map((location, locIndex) => (
                                 <span
-                                  key={routeIndex}
+                                  key={locIndex}
                                   className='bg-blue-100 text-blue-800 text-sm px-2 py-1 rounded-full'
                                 >
-                                  {route.distance.toFixed(1)} mi
+                                  {location}
                                 </span>
-                              ),
-                            )}
+                              ))}
+                            </div>
+                          </div>
+                          <div className='flex items-center gap-2 mt-2'>
+                            <p className='text-sm text-gray-600'>
+                              Daily distances:
+                            </p>
+                            <div className='flex flex-wrap gap-2'>
+                              {Object.values(mergedRoutes).map(
+                                (route, routeIndex) => (
+                                  <span
+                                    key={routeIndex}
+                                    className='bg-blue-100 text-blue-800 text-sm px-2 py-1 rounded-full'
+                                  >
+                                    {route.distance.toFixed(1)} mi
+                                  </span>
+                                ),
+                              )}
+                            </div>
                           </div>
                         </div>
-                      </div>
-                      {expandedOptions.has(Number(campsiteCombination)) && (
-                        <div className='overflow-x-auto'>
-                          <table className='w-full bg-white text-sm'>
-                            <thead>
-                              <tr className='text-left underline'>
-                                <th className='px-4 py-2 w-8'></th>
-                                <th className='px-4 py-2'>Date</th>
-                                <th className='px-4 py-2'>Start Location</th>
-                                <th className='px-4 py-2'>End Location</th>
-                                <th className='px-4 py-2'>Distance</th>
-                                <th className='px-4 py-2'>Start Window</th>
-                                <th className='px-4 py-2'>End Window</th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {Object.values(mergedRoutes).map(
-                                (route, routeIndex) => {
-                                  const rowKey = `${route.campsite_combination}-${route.date}-${routeIndex}`;
-                                  const isRowExpanded =
-                                    expandedRows.has(rowKey);
+                        {expandedOptions.has(Number(campsiteCombination)) && (
+                          <div className='overflow-x-auto'>
+                            <table className='w-full bg-white text-sm'>
+                              <thead>
+                                <tr className='text-left underline'>
+                                  <th className='px-4 py-2 w-8'></th>
+                                  <th className='px-4 py-2'>Date</th>
+                                  <th className='px-4 py-2'>Start Location</th>
+                                  <th className='px-4 py-2'>End Location</th>
+                                  <th className='px-4 py-2'>Distance</th>
+                                  <th className='px-4 py-2'>Start Window</th>
+                                  <th className='px-4 py-2'>End Window</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {Object.values(mergedRoutes).map(
+                                  (route, routeIndex) => {
+                                    const rowKey = `${route.campsite_combination}-${route.date}-${routeIndex}`;
+                                    const isRowExpanded =
+                                      expandedRows.has(rowKey);
 
-                                  return (
-                                    <React.Fragment key={rowKey}>
-                                      <tr className='hover:bg-gray-50'>
-                                        <td className='px-4 py-2'>
-                                          <button
-                                            onClick={() => toggleRow(rowKey)}
-                                            className='flex-shrink-0 w-5 h-5 p-0 text-lg font-bold text-gray-600 hover:text-gray-800 transition-colors flex items-center justify-center'
-                                          >
-                                            {isRowExpanded ? '−' : '+'}
-                                          </button>
-                                        </td>
-                                        <td className='px-4 py-2'>
-                                          {formatDate(route.date)}
-                                        </td>
-                                        <td className='px-4 py-2'>
-                                          {route.start_location}
-                                        </td>
-                                        <td className='px-4 py-2'>
-                                          {route.end_location}
-                                        </td>
-                                        <td className='px-4 py-2'>
-                                          {route.distance.toFixed(1)} mi
-                                        </td>
-                                        <td className='px-4 py-2'>
-                                          <div className='space-y-1'>
-                                            {route.start_times.map(
-                                              (timeWindow, timeIndex) => (
-                                                <div
-                                                  key={timeIndex}
-                                                  className='pb-1'
-                                                >
-                                                  <div>
-                                                    {formatTimeOnly(
-                                                      timeWindow.first,
-                                                    )}{' '}
-                                                    –{' '}
-                                                    {formatTimeOnly(
-                                                      timeWindow.last,
-                                                    )}
-                                                  </div>
-                                                </div>
-                                              ),
-                                            )}
-                                          </div>
-                                        </td>
-                                        <td className='px-4 py-2'>
-                                          <div className='space-y-1'>
-                                            {route.end_times.map(
-                                              (timeWindow, timeIndex) => (
-                                                <div
-                                                  key={timeIndex}
-                                                  className='pb-1'
-                                                >
-                                                  <div>
-                                                    {formatTimeOnly(
-                                                      timeWindow.first,
-                                                    )}{' '}
-                                                    –{' '}
-                                                    {formatTimeOnly(
-                                                      timeWindow.last,
-                                                    )}
-                                                  </div>
-                                                </div>
-                                              ),
-                                            )}
-                                          </div>
-                                        </td>
-                                      </tr>
-                                      {isRowExpanded && (
-                                        <tr className='bg-blue-50'>
-                                          <td className='px-4 py-3' colSpan={7}>
-                                            <div className='text-sm text-gray-700 space-y-3 pl-14 pr-6'>
-                                              <div className='flex gap-6 items-start'>
-                                                <div className='flex-1'>
-                                                  <label className='block font-medium mb-2'>
-                                                    Departure Time:{' '}
-                                                    {minutesToTime(
-                                                      rowSliderValues[rowKey] ||
-                                                        getDefaultSliderValue(
-                                                          route.start_times,
-                                                        ),
-                                                    )}
-                                                  </label>
-                                                  <input
-                                                    type='range'
-                                                    min='0'
-                                                    max='1434' // 11:54 PM = 23*60 + 54 = 1434 minutes
-                                                    step='6'
-                                                    value={
-                                                      rowSliderValues[rowKey] ||
-                                                      getDefaultSliderValue(
-                                                        route.start_times,
-                                                      )
-                                                    }
-                                                    onChange={(e) =>
-                                                      updateSliderValue(
-                                                        rowKey,
-                                                        parseInt(
-                                                          e.target.value,
-                                                        ),
-                                                      )
-                                                    }
-                                                    className='w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider'
-                                                  />
-                                                  <div className='flex justify-between text-xs text-gray-500 mt-1'>
-                                                    <span>12:00 AM</span>
-                                                    <span>11:54 PM</span>
-                                                  </div>
-                                                </div>
-                                                <div className='flex-1'>
-                                                  <label className='block font-medium mb-2'>
-                                                    Hiking Speed:{' '}
-                                                    {(
-                                                      rowSpeedValues[rowKey] ||
-                                                      speed
-                                                    ).toFixed(1)}{' '}
-                                                    mph
-                                                  </label>
-                                                  <input
-                                                    type='range'
-                                                    min='0.2'
-                                                    max='3.0'
-                                                    step='0.1'
-                                                    value={
-                                                      rowSpeedValues[rowKey] ||
-                                                      speed
-                                                    }
-                                                    onChange={(e) =>
-                                                      updateSpeedValue(
-                                                        rowKey,
-                                                        parseFloat(
-                                                          e.target.value,
-                                                        ),
-                                                      )
-                                                    }
-                                                    className='w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider'
-                                                  />
-                                                  <div className='flex justify-between text-xs text-gray-500 mt-1'>
-                                                    <span>0.2 mph</span>
-                                                    <span>3.0 mph</span>
-                                                  </div>
-                                                </div>
-                                                <div
-                                                  style={{
-                                                    marginTop: '1rem',
-                                                  }}
-                                                >
-                                                  <button
-                                                    onClick={() =>
-                                                      handlePlotRoute(
-                                                        rowKey,
-                                                        route,
-                                                      )
-                                                    }
-                                                    className='px-4 py-2 bg-blue-500 text-white rounded-md font-semibold hover:bg-blue-600 transition-colors'
+                                    return (
+                                      <React.Fragment key={rowKey}>
+                                        <tr className='hover:bg-gray-50'>
+                                          <td className='px-4 py-2'>
+                                            <button
+                                              onClick={() => toggleRow(rowKey)}
+                                              className='flex-shrink-0 w-5 h-5 p-0 text-lg font-bold text-gray-600 hover:text-gray-800 transition-colors flex items-center justify-center'
+                                            >
+                                              {isRowExpanded ? '−' : '+'}
+                                            </button>
+                                          </td>
+                                          <td className='px-4 py-2'>
+                                            {formatDate(route.date)}
+                                          </td>
+                                          <td className='px-4 py-2'>
+                                            {route.start_location}
+                                          </td>
+                                          <td className='px-4 py-2'>
+                                            {route.end_location}
+                                          </td>
+                                          <td className='px-4 py-2'>
+                                            {route.distance.toFixed(1)} mi
+                                          </td>
+                                          <td className='px-4 py-2'>
+                                            <div className='space-y-1'>
+                                              {route.start_times.map(
+                                                (timeWindow, timeIndex) => (
+                                                  <div
+                                                    key={timeIndex}
+                                                    className='pb-1'
                                                   >
-                                                    Plot route
-                                                  </button>
-                                                </div>
-                                              </div>
-                                              {plotResponses.map(
-                                                (entry, i) =>
-                                                  entry.rowKey === rowKey && (
-                                                    <div
-                                                      key={i}
-                                                      className='mt-4 p-3 bg-gray-100 rounded-md'
-                                                    >
-                                                      <Plot
-                                                        data={entry.data}
-                                                        layout={{
-                                                          ...entry.layout,
-                                                          autosize: true,
-                                                          height: 400,
-                                                          margin: {
-                                                            t: 30,
-                                                            r: 30,
-                                                            b: 40,
-                                                            l: 40,
-                                                          },
-                                                        }}
-                                                        config={{
-                                                          responsive: true,
-                                                        }}
-                                                      />
+                                                    <div>
+                                                      {formatTimeOnly(
+                                                        timeWindow.first,
+                                                      )}{' '}
+                                                      –{' '}
+                                                      {formatTimeOnly(
+                                                        timeWindow.last,
+                                                      )}
                                                     </div>
-                                                  ),
+                                                  </div>
+                                                ),
+                                              )}
+                                            </div>
+                                          </td>
+                                          <td className='px-4 py-2'>
+                                            <div className='space-y-1'>
+                                              {route.end_times.map(
+                                                (timeWindow, timeIndex) => (
+                                                  <div
+                                                    key={timeIndex}
+                                                    className='pb-1'
+                                                  >
+                                                    <div>
+                                                      {formatTimeOnly(
+                                                        timeWindow.first,
+                                                      )}{' '}
+                                                      –{' '}
+                                                      {formatTimeOnly(
+                                                        timeWindow.last,
+                                                      )}
+                                                    </div>
+                                                  </div>
+                                                ),
                                               )}
                                             </div>
                                           </td>
                                         </tr>
-                                      )}
-                                    </React.Fragment>
-                                  );
-                                },
-                              )}
-                            </tbody>
-                          </table>
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-            </div>
-          )}
-        </div>
-      )}
+                                        {isRowExpanded && (
+                                          <tr className='bg-blue-50'>
+                                            <td
+                                              className='px-4 py-3'
+                                              colSpan={7}
+                                            >
+                                              <div className='text-sm text-gray-700 space-y-3 pl-14 pr-6'>
+                                                <div className='flex gap-6 items-start'>
+                                                  <div className='flex-1'>
+                                                    <label className='block font-medium mb-2'>
+                                                      Departure Time:{' '}
+                                                      {minutesToTime(
+                                                        rowSliderValues[
+                                                          rowKey
+                                                        ] ||
+                                                          getDefaultSliderValue(
+                                                            route.start_times,
+                                                          ),
+                                                      )}
+                                                    </label>
+                                                    <input
+                                                      type='range'
+                                                      min='0'
+                                                      max='1434' // 11:54 PM = 23*60 + 54 = 1434 minutes
+                                                      step='6'
+                                                      value={
+                                                        rowSliderValues[
+                                                          rowKey
+                                                        ] ||
+                                                        getDefaultSliderValue(
+                                                          route.start_times,
+                                                        )
+                                                      }
+                                                      onChange={(e) =>
+                                                        updateSliderValue(
+                                                          rowKey,
+                                                          parseInt(
+                                                            e.target.value,
+                                                          ),
+                                                        )
+                                                      }
+                                                      className='w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider'
+                                                    />
+                                                    <div className='flex justify-between text-xs text-gray-500 mt-1'>
+                                                      <span>12:00 AM</span>
+                                                      <span>11:54 PM</span>
+                                                    </div>
+                                                  </div>
+                                                  <div className='flex-1'>
+                                                    <label className='block font-medium mb-2'>
+                                                      Hiking Speed:{' '}
+                                                      {(
+                                                        rowSpeedValues[
+                                                          rowKey
+                                                        ] || speed
+                                                      ).toFixed(1)}{' '}
+                                                      mph
+                                                    </label>
+                                                    <input
+                                                      type='range'
+                                                      min='0.2'
+                                                      max='3.0'
+                                                      step='0.1'
+                                                      value={
+                                                        rowSpeedValues[
+                                                          rowKey
+                                                        ] || speed
+                                                      }
+                                                      onChange={(e) =>
+                                                        updateSpeedValue(
+                                                          rowKey,
+                                                          parseFloat(
+                                                            e.target.value,
+                                                          ),
+                                                        )
+                                                      }
+                                                      className='w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider'
+                                                    />
+                                                    <div className='flex justify-between text-xs text-gray-500 mt-1'>
+                                                      <span>0.2 mph</span>
+                                                      <span>3.0 mph</span>
+                                                    </div>
+                                                  </div>
+                                                  <div
+                                                    style={{
+                                                      marginTop: '1rem',
+                                                    }}
+                                                  >
+                                                    <button
+                                                      onClick={() =>
+                                                        handlePlotRoute(
+                                                          rowKey,
+                                                          route,
+                                                        )
+                                                      }
+                                                      className='px-4 py-2 bg-blue-500 text-white rounded-md font-semibold hover:bg-blue-600 transition-colors'
+                                                    >
+                                                      Plot route
+                                                    </button>
+                                                  </div>
+                                                </div>
+                                                {plotResponses.map(
+                                                  (entry, i) =>
+                                                    entry.rowKey === rowKey && (
+                                                      <div
+                                                        key={i}
+                                                        className='mt-4 p-3 bg-gray-100 rounded-md'
+                                                      >
+                                                        <Plot
+                                                          data={entry.data}
+                                                          layout={{
+                                                            ...entry.layout,
+                                                            autosize: true,
+                                                            height: 400,
+                                                            margin: {
+                                                              t: 30,
+                                                              r: 30,
+                                                              b: 40,
+                                                              l: 40,
+                                                            },
+                                                          }}
+                                                          config={{
+                                                            responsive: true,
+                                                          }}
+                                                        />
+                                                      </div>
+                                                    ),
+                                                )}
+                                              </div>
+                                            </td>
+                                          </tr>
+                                        )}
+                                      </React.Fragment>
+                                    );
+                                  },
+                                )}
+                              </tbody>
+                            </table>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      <div className='w-fit mx-auto mt-8 p-4 bg-yellow-50 border border-yellow-200 rounded-lg'>
+        <p className='text-sm text-gray-700 text-center'>
+          <strong>Disclaimer:</strong> While this tool is designed to assist
+          with planning, it is not intended to be a replacement for more
+          detailed analysis on the part of the hiker. Any route suggestions
+          provided should be checked against the latest maps, tide tables, and
+          any information provided by Olympic National Park, the Ozette Indian
+          Reservation, and the Makah Reservation.
+        </p>
+      </div>
     </main>
   );
 }
