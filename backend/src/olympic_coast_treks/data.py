@@ -89,7 +89,50 @@ RESTRICTIONS["middle"] = [
         "headland_alternative": False,
     },
 ]
-
+RESTRICTIONS["north"] = [
+    {
+        "restriction_ft": 5.0,
+        "start_miles": 4.7,
+        "end_miles": 5.1,
+        "headland_alternative": False,
+    },
+    {
+        "restriction_ft": 4.0,
+        "start_miles": 5.1,
+        "end_miles": 5.5,
+        "headland_alternative": False,
+    },
+    {
+        "restriction_ft": 6.0,
+        "start_miles": 5.9,
+        "end_miles": 6.3,
+        "headland_alternative": False,
+    },
+    {
+        "restriction_ft": 5.5,
+        "start_miles": 8.9,
+        "end_miles": 9.2,
+        "headland_alternative": False,
+    },
+    {
+        "restriction_ft": 4.0,
+        "start_miles": 9.2,
+        "end_miles": 9.3,
+        "headland_alternative": True,
+    },
+    {
+        "restriction_ft": 6.0,
+        "start_miles": 10.5,
+        "end_miles": 10.9,
+        "headland_alternative": False,
+    },
+    {
+        "restriction_ft": 4.5,
+        "start_miles": 11.2,
+        "end_miles": 11.5,
+        "headland_alternative": True,
+    },
+]
 LOCATIONS = {}
 LOCATIONS["south"] = [
     {
@@ -317,49 +360,5 @@ LOCATIONS["north"] = [
         "distance_miles": 15.9,
         "campsite": False,
         "trailhead": True,
-    },
-]
-RESTRICTIONS["north"] = [
-    {
-        "restriction_ft": 5.0,
-        "start_miles": 4.7,
-        "end_miles": 5.1,
-        "headland_alternative": False,
-    },
-    {
-        "restriction_ft": 4.0,
-        "start_miles": 5.1,
-        "end_miles": 5.5,
-        "headland_alternative": False,
-    },
-    {
-        "restriction_ft": 6.0,
-        "start_miles": 5.9,
-        "end_miles": 6.3,
-        "headland_alternative": False,
-    },
-    {
-        "restriction_ft": 5.5,
-        "start_miles": 8.9,
-        "end_miles": 9.2,
-        "headland_alternative": False,
-    },
-    {
-        "restriction_ft": 4.0,
-        "start_miles": 9.2,
-        "end_miles": 9.3,
-        "headland_alternative": True,
-    },
-    {
-        "restriction_ft": 6.0,
-        "start_miles": 10.5,
-        "end_miles": 10.9,
-        "headland_alternative": False,
-    },
-    {
-        "restriction_ft": 4.5,
-        "start_miles": 11.2,
-        "end_miles": 11.5,
-        "headland_alternative": True,
     },
 ]

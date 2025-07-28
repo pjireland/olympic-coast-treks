@@ -766,6 +766,40 @@ function App() {
         )}
       </div>
 
+      <div className='w-fit mx-auto mt-8 p-4 bg-blue-50 border border-blue-200 rounded-lg'>
+        <h3 className='text-lg font-semibold text-gray-800 mb-3 text-center'>
+          Recommended Resources
+        </h3>
+        <div className='text-sm'>
+          <a
+            href='https://metskermaps.com/collections/custom-correct-maps'
+            target='_blank'
+            rel='noopener noreferrer'
+            className='text-blue-600 hover:text-blue-800 underline font-medium'
+          >
+            Custom Correct Topo Maps
+          </a>
+          <span className='mx-2 text-gray-500'>|</span>
+          <a
+            href='https://www.nps.gov/olym/planyourvisit/wilderness-coast.htm'
+            target='_blank'
+            rel='noopener noreferrer'
+            className='text-blue-600 hover:text-blue-800 underline font-medium'
+          >
+            Hiking the Wilderness Coast
+          </a>
+          <span className='mx-2 text-gray-500'>|</span>
+          <a
+            href='https://tidesandcurrents.noaa.gov/noaatidepredictions.html?id=9442396'
+            target='_blank'
+            rel='noopener noreferrer'
+            className='text-blue-600 hover:text-blue-800 underline font-medium'
+          >
+            Tide Tables for La Push
+          </a>
+        </div>
+      </div>
+
       <div className='w-fit mx-auto mt-8 p-4 bg-yellow-50 border border-yellow-200 rounded-lg'>
         <p className='text-sm text-gray-700 text-center'>
           <strong>Disclaimer:</strong> While this tool is designed to assist
