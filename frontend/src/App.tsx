@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import Plot from 'react-plotly.js';
 import './App.css';
 import type { PlotData, Layout } from 'plotly.js-basic-dist';
@@ -75,7 +75,7 @@ function App() {
   type PlotEntry = {
     rowKey: string;
     data: PlotData[];
-    layout: Partial<Layout>;
+    layout: Partial<Layout> & { meta?: { ozette_river_warning?: boolean } };
   };
   const [plotResponses, setPlotResponses] = useState<PlotEntry[]>([]);
 
@@ -353,6 +353,43 @@ function App() {
     const locations = Array.from(locationSet);
     // Drop first and last entries
     return locations.slice(1, -1);
+  };
+
+  // Add this state and effect in your component
+  const [windowSize, setWindowSize] = useState({ width: 0, height: 0 });
+
+  useEffect(() => {
+    const handleResize = () => {
+      setWindowSize({
+        width: window.innerWidth,
+        height: window.innerHeight,
+      });
+    };
+
+    // Set initial size
+    handleResize();
+
+    // Add event listener
+    window.addEventListener('resize', handleResize);
+
+    // Cleanup
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  // Add this helper function in your component (before the return statement)
+  const getPlotDimensions = () => {
+    if (typeof windowSize !== 'undefined') {
+      // Get the available width (accounting for padding, margins, etc.)
+      const maxWidth = Math.min(windowSize.width, 800); // 85% of screen width, max 800px
+      const height = Math.floor(maxWidth * 0.6); // 60% aspect ratio (adjust as needed)
+
+      return {
+        width: maxWidth,
+        height: height,
+      };
+    }
+
+    return { width: 600, height: 360 }; // Fallback dimensions
   };
 
   return (
@@ -723,14 +760,15 @@ function App() {
                                                     entry.rowKey === rowKey && (
                                                       <div
                                                         key={i}
-                                                        className='mt-4 p-3 bg-gray-100 rounded-md'
+                                                        className='mt-4 p-3 bg-gray-100 rounded-md mx-auto flex flex-col items-center'
                                                       >
                                                         <Plot
+                                                          key={`${rowKey}-${i}`}
                                                           data={entry.data}
                                                           layout={{
                                                             ...entry.layout,
-                                                            autosize: true,
-                                                            height: 400,
+                                                            autosize: false,
+                                                            ...getPlotDimensions(),
                                                             margin: {
                                                               t: 30,
                                                               r: 30,
@@ -742,6 +780,22 @@ function App() {
                                                             responsive: true,
                                                           }}
                                                         />
+                                                        {entry.layout.meta
+                                                          ?.ozette_river_warning && (
+                                                          <div className='mt-3 p-2 bg-yellow-50 border border-yellow-300 rounded text-sm text-gray-700'>
+                                                            * From the National
+                                                            Park Service: "The
+                                                            Ozette River must be
+                                                            forded. The crossing
+                                                            may be impossible in
+                                                            winter and can be
+                                                            hazardous year round
+                                                            at high tide and/or
+                                                            after heavy rain. It
+                                                            is recommended to
+                                                            ford at low tide."
+                                                          </div>
+                                                        )}
                                                       </div>
                                                     ),
                                                 )}
