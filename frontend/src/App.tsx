@@ -1,12 +1,17 @@
-import React, { useEffect, useState } from 'react';
-import Plot from 'react-plotly.js';
 import './App.css';
-import type { PlotData, Layout } from 'plotly.js-basic-dist';
 
-import Dropdown from './components/Dropdown';
+import React, { useEffect, useState } from 'react';
+
 import DateRangePicker from './components/DateRangePicker';
-import HikingSpeedSlider from './components/HikingSpeedSlider';
 import DistanceRangeSlider from './components/DistanceRangeSlider';
+import Dropdown from './components/Dropdown';
+import HikingSpeedSlider from './components/HikingSpeedSlider';
+import RoutePlotter, {
+  getDefaultSliderValue,
+  handlePlotRouteAPI,
+  type MergedRoute,
+  type PlotEntry,
+} from './components/RoutePlotter';
 import TidalBufferSlider from './components/TidalBufferSlider';
 
 // Define the shape of your API response
@@ -72,22 +77,7 @@ function App() {
     {},
   );
   // State for plot API response
-  type PlotEntry = {
-    rowKey: string;
-    data: PlotData[];
-    layout: Partial<Layout> & { meta?: { ozette_river_warning?: boolean } };
-  };
   const [plotResponses, setPlotResponses] = useState<PlotEntry[]>([]);
-
-  type MergedRoute = {
-    campsite_combination: number;
-    date: string;
-    start_location: string;
-    end_location: string;
-    distance: number;
-    start_times: { first: string; last: string }[];
-    end_times: { first: string; last: string }[];
-  };
 
   const handleDropdownSelect = (direction: string, section: string) => {
     setSelectedDirection(direction);
@@ -207,140 +197,19 @@ function App() {
     });
   };
 
-  // Helper function to convert time string to minutes from midnight
-  const timeToMinutes = (timeString: string): number => {
-    const date = new Date(timeString);
-    return date.getHours() * 60 + date.getMinutes();
-  };
-
-  // Helper function to convert minutes from midnight to time string
-  const minutesToTime = (minutes: number): string => {
-    const hours = Math.floor(minutes / 60);
-    const mins = minutes % 60;
-    const period = hours >= 12 ? 'PM' : 'AM';
-    const displayHours = hours === 0 ? 12 : hours > 12 ? hours - 12 : hours;
-    return `${displayHours}:${mins.toString().padStart(2, '0')} ${period}`;
-  };
-
-  // Helper function to round time to nearest 6-minute interval
-  const roundToNearestSixMinutes = (minutes: number): number => {
-    return Math.round(minutes / 6) * 6;
-  };
-
-  // Helper function to get default slider value for a row
-  const getDefaultSliderValue = (
-    startTimes: { first: string; last: string }[],
-  ): number => {
-    if (startTimes.length === 0) return 720; // Default to 12:00 PM if no times
-
-    // Use the first time window for default calculation
-    const firstWindow = startTimes[0];
-    const startMinutes = timeToMinutes(firstWindow.first);
-    const endMinutes = timeToMinutes(firstWindow.last);
-    const middleMinutes = (startMinutes + endMinutes) / 2;
-
-    return roundToNearestSixMinutes(middleMinutes);
-  };
-
-  // Function to update slider value for a specific row
-  const updateSliderValue = (rowKey: string, value: number) => {
-    setRowSliderValues((prev) => ({
-      ...prev,
-      [rowKey]: value,
-    }));
-  };
-
-  // Function to update speed value for a specific row
-  const updateSpeedValue = (rowKey: string, value: number) => {
-    setRowSpeedValues((prev) => ({
-      ...prev,
-      [rowKey]: value,
-    }));
-  };
-
   // Function to handle plot route button click
   const handlePlotRoute = async (rowKey: string, route: MergedRoute) => {
     const departureTime =
       rowSliderValues[rowKey] || getDefaultSliderValue(route.start_times);
     const hikingSpeed = rowSpeedValues[rowKey] || speed;
 
-    // Convert departureTime (minutes from midnight) to a full datetime string
-    const routeDate = new Date(route.date);
-    const hours = Math.floor(departureTime / 60);
-    const minutes = departureTime % 60;
-    routeDate.setHours(hours, minutes, 0, 0);
-    const pad = (n: number) => n.toString().padStart(2, '0');
-    const startTime =
-      routeDate.getFullYear() +
-      '-' +
-      pad(routeDate.getMonth() + 1) +
-      '-' +
-      pad(routeDate.getDate() + 1) +
-      'T' +
-      pad(routeDate.getHours()) +
-      ':' +
-      pad(routeDate.getMinutes());
-    try {
-      // Build query parameters for GET request
-      const params = new URLSearchParams();
-      params.set('start_time', startTime);
-      params.set('start_location', route.start_location);
-      params.set('end_location', route.end_location);
-      params.set('speed', hikingSpeed.toString());
-
-      const response = await fetch(
-        `http://localhost:8000/plot?${params.toString()}`,
-        {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        },
-      );
-
-      if (!response.ok) {
-        throw new Error(
-          `API request failed: ${response.status} ${response.statusText}`,
-        );
-      }
-
-      const responseData = await response.json();
-
-      // Store the response in state so we can display it
-      setPlotResponses((prev) => {
-        const filteredResponses = prev.filter(
-          (entry) => entry.rowKey !== rowKey,
-        );
-        return [
-          ...filteredResponses,
-          { rowKey, data: responseData.data, layout: responseData.layout },
-        ];
-      });
-    } catch (error) {
-      console.error('Error calling plot API:', error);
-      setPlotResponses((prev) => [
-        ...prev.filter((entry) => entry.rowKey !== rowKey),
-        {
-          rowKey,
-          data: [],
-          layout: {
-            title: {
-              text: 'Error loading plot',
-            },
-            annotations: [
-              {
-                text:
-                  error instanceof Error
-                    ? error.message
-                    : 'Unknown error occurred',
-                showarrow: false,
-                font: { size: 16, color: 'red' },
-              },
-            ],
-          },
-        },
-      ]);
-    }
+    await handlePlotRouteAPI(
+      rowKey,
+      route,
+      departureTime,
+      hikingSpeed,
+      setPlotResponses,
+    );
   };
 
   // Helper function to get unique locations for a set of routes
@@ -376,12 +245,10 @@ function App() {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // Add this helper function in your component (before the return statement)
   const getPlotDimensions = () => {
     if (typeof windowSize !== 'undefined') {
-      // Get the available width (accounting for padding, margins, etc.)
-      const maxWidth = Math.min(windowSize.width, 800); // 85% of screen width, max 800px
-      const height = Math.floor(maxWidth * 0.6); // 60% aspect ratio (adjust as needed)
+      const maxWidth = Math.min(windowSize.width, 800);
+      const height = Math.floor(maxWidth * 0.6);
 
       return {
         width: maxWidth,
@@ -660,146 +527,26 @@ function App() {
                                               className='px-4 py-3'
                                               colSpan={7}
                                             >
-                                              <div className='text-sm text-gray-700 space-y-3 pl-14 pr-6'>
-                                                <div className='flex gap-6 items-start'>
-                                                  <div className='flex-1'>
-                                                    <label className='block font-medium mb-2'>
-                                                      Departure Time:{' '}
-                                                      {minutesToTime(
-                                                        rowSliderValues[
-                                                          rowKey
-                                                        ] ||
-                                                          getDefaultSliderValue(
-                                                            route.start_times,
-                                                          ),
-                                                      )}
-                                                    </label>
-                                                    <input
-                                                      type='range'
-                                                      min='0'
-                                                      max='1434' // 11:54 PM = 23*60 + 54 = 1434 minutes
-                                                      step='6'
-                                                      value={
-                                                        rowSliderValues[
-                                                          rowKey
-                                                        ] ||
-                                                        getDefaultSliderValue(
-                                                          route.start_times,
-                                                        )
-                                                      }
-                                                      onChange={(e) =>
-                                                        updateSliderValue(
-                                                          rowKey,
-                                                          parseInt(
-                                                            e.target.value,
-                                                          ),
-                                                        )
-                                                      }
-                                                      className='w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider'
-                                                    />
-                                                    <div className='flex justify-between text-xs text-gray-500 mt-1'>
-                                                      <span>12:00 AM</span>
-                                                      <span>11:54 PM</span>
-                                                    </div>
-                                                  </div>
-                                                  <div className='flex-1'>
-                                                    <label className='block font-medium mb-2'>
-                                                      Hiking Speed:{' '}
-                                                      {(
-                                                        rowSpeedValues[
-                                                          rowKey
-                                                        ] || speed
-                                                      ).toFixed(1)}{' '}
-                                                      mph
-                                                    </label>
-                                                    <input
-                                                      type='range'
-                                                      min='0.2'
-                                                      max='3.0'
-                                                      step='0.1'
-                                                      value={
-                                                        rowSpeedValues[
-                                                          rowKey
-                                                        ] || speed
-                                                      }
-                                                      onChange={(e) =>
-                                                        updateSpeedValue(
-                                                          rowKey,
-                                                          parseFloat(
-                                                            e.target.value,
-                                                          ),
-                                                        )
-                                                      }
-                                                      className='w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider'
-                                                    />
-                                                    <div className='flex justify-between text-xs text-gray-500 mt-1'>
-                                                      <span>0.2 mph</span>
-                                                      <span>3.0 mph</span>
-                                                    </div>
-                                                  </div>
-                                                  <div
-                                                    style={{
-                                                      marginTop: '1rem',
-                                                    }}
-                                                  >
-                                                    <button
-                                                      onClick={() =>
-                                                        handlePlotRoute(
-                                                          rowKey,
-                                                          route,
-                                                        )
-                                                      }
-                                                      className='px-4 py-2 bg-blue-500 text-white rounded-md font-semibold hover:bg-blue-600 transition-colors'
-                                                    >
-                                                      Plot route
-                                                    </button>
-                                                  </div>
-                                                </div>
-                                                {plotResponses.map(
-                                                  (entry, i) =>
-                                                    entry.rowKey === rowKey && (
-                                                      <div
-                                                        key={i}
-                                                        className='mt-4 p-3 bg-gray-100 rounded-md mx-auto flex flex-col items-center'
-                                                      >
-                                                        <Plot
-                                                          key={`${rowKey}-${i}`}
-                                                          data={entry.data}
-                                                          layout={{
-                                                            ...entry.layout,
-                                                            autosize: false,
-                                                            ...getPlotDimensions(),
-                                                            margin: {
-                                                              t: 30,
-                                                              r: 30,
-                                                              b: 40,
-                                                              l: 40,
-                                                            },
-                                                          }}
-                                                          config={{
-                                                            responsive: true,
-                                                          }}
-                                                        />
-                                                        {entry.layout.meta
-                                                          ?.ozette_river_warning && (
-                                                          <div className='mt-3 p-2 bg-yellow-50 border border-yellow-300 rounded text-sm text-gray-700'>
-                                                            * From the National
-                                                            Park Service: "The
-                                                            Ozette River must be
-                                                            forded. The crossing
-                                                            may be impossible in
-                                                            winter and can be
-                                                            hazardous year round
-                                                            at high tide and/or
-                                                            after heavy rain. It
-                                                            is recommended to
-                                                            ford at low tide."
-                                                          </div>
-                                                        )}
-                                                      </div>
-                                                    ),
-                                                )}
-                                              </div>
+                                              <RoutePlotter
+                                                rowKey={rowKey}
+                                                route={route}
+                                                speed={speed}
+                                                rowSliderValues={
+                                                  rowSliderValues
+                                                }
+                                                rowSpeedValues={rowSpeedValues}
+                                                plotResponses={plotResponses}
+                                                setRowSliderValues={
+                                                  setRowSliderValues
+                                                }
+                                                setRowSpeedValues={
+                                                  setRowSpeedValues
+                                                }
+                                                onPlotRoute={handlePlotRoute}
+                                                getPlotDimensions={
+                                                  getPlotDimensions
+                                                }
+                                              />
                                             </td>
                                           </tr>
                                         )}
