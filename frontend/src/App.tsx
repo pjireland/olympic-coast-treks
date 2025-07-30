@@ -1,15 +1,16 @@
-import React, { useEffect, useState } from 'react';
 import './App.css';
+
+import React, { useEffect, useState } from 'react';
 
 import DateRangePicker from './components/DateRangePicker';
 import DistanceRangeSlider from './components/DistanceRangeSlider';
 import Dropdown from './components/Dropdown';
 import HikingSpeedSlider from './components/HikingSpeedSlider';
 import RoutePlotter, {
-  type PlotEntry,
-  type MergedRoute,
   getDefaultSliderValue,
   handlePlotRouteAPI,
+  type MergedRoute,
+  type PlotEntry,
 } from './components/RoutePlotter';
 import TidalBufferSlider from './components/TidalBufferSlider';
 
