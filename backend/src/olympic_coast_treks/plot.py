@@ -294,25 +294,7 @@ def plot_tides_and_restrictions(
             annotation_position=annotation_position,
         )
         if "Ozette River" in location["name"] and ozette_idx == 0:
-            fig.update_layout(margin=dict(b=150))  # Increase bottom margin
-            fig.add_annotation(
-                text=(
-                    '* From the National Park Service: "The Ozette River must '
-                    "be forded. <br>"
-                    "The crossing may be impossible in winter and can be "
-                    "hazardous year<br>round at high tide and/or after heavy "
-                    'rain. It is recommended to ford<br>at low tide."'
-                ),
-                xref="paper",
-                yref="paper",
-                x=0.0,
-                y=-0.18,
-                xanchor="left",
-                yanchor="top",
-                showarrow=False,
-                font=dict(size=14, color="red"),
-                align="left",
-            )
+            fig.update_layout(meta={"ozette_river_warning": True})
             ozette_idx += 1
         idx += 1
     fig.update_yaxes(
