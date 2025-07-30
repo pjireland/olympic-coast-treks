@@ -125,7 +125,7 @@ function App() {
         );
       }
 
-      const data: Route[] = await response.json();
+      const data: Route[] = (await response.json()) as Route[];
       setResults(data || []);
 
       // Update URL parameters (keeping this for browser history)
@@ -289,7 +289,9 @@ function App() {
           <TidalBufferSlider buffer={buffer} setBuffer={setBuffer} />
           <div className='w-fit rounded-lg text-left'>
             <button
-              onClick={callAPI}
+              onClick={() => {
+                callAPI().catch(console.error);
+              }}
               disabled={!isValidInput || isLoading}
               className={`px-4 py-2 rounded-md font-semibold ${
                 isValidInput && !isLoading
@@ -542,7 +544,9 @@ function App() {
                                                 setRowSpeedValues={
                                                   setRowSpeedValues
                                                 }
-                                                onPlotRoute={handlePlotRoute}
+                                                onPlotRoute={(...args) => {
+                                                  void handlePlotRoute(...args);
+                                                }}
                                                 getPlotDimensions={
                                                   getPlotDimensions
                                                 }
