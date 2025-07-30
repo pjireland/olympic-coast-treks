@@ -38,6 +38,11 @@ interface RoutePlotterProps {
   getPlotDimensions: () => { width: number; height: number };
 }
 
+interface PlotResponse {
+  data: PlotData[];
+  layout: Partial<Layout> & { meta?: { ozette_river_warning?: boolean } };
+}
+
 // Helper functions
 export const timeToMinutes = (timeString: string): number => {
   const date = new Date(timeString);
@@ -118,7 +123,7 @@ export const handlePlotRouteAPI = async (
       );
     }
 
-    const responseData = await response.json();
+    const responseData: PlotResponse = (await response.json()) as PlotResponse;
 
     // Store the response in state so we can display it
     setPlotResponses((prev) => {
