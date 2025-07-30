@@ -1,6 +1,6 @@
 /* eslint-disable react-refresh/only-export-components */
 
-import type { Layout,PlotData } from 'plotly.js-basic-dist';
+import type { Layout, PlotData } from 'plotly.js-basic-dist';
 import React from 'react';
 import Plot from 'react-plotly.js';
 
