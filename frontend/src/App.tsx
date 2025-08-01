@@ -1,6 +1,7 @@
 import './App.css';
 
-import React, { useEffect, useState } from 'react';
+import { Fragment, useEffect, useState } from 'react';
+import { z } from 'zod/v4';
 
 import DateRangePicker from './components/DateRangePicker';
 import DistanceRangeSlider from './components/DistanceRangeSlider';
@@ -14,18 +15,19 @@ import RoutePlotter, {
 } from './components/RoutePlotter';
 import TidalBufferSlider from './components/TidalBufferSlider';
 
-// Define the shape of your API response
-interface Route {
-  campsite_combination: number;
-  date: string; // ISO date string
-  start_location: string;
-  end_location: string;
-  distance: number;
-  first_possible_start: string; // ISO datetime string
-  last_possible_start: string; // ISO datetime string
-  first_possible_end: string; // ISO datetime string
-  last_possible_end: string; // ISO datetime string
-}
+const RouteSchema = z.object({
+  campsite_combination: z.number(),
+  date: z.string(),
+  start_location: z.string(),
+  end_location: z.string(),
+  distance: z.number(),
+  first_possible_start: z.string(),
+  last_possible_start: z.string(),
+  first_possible_end: z.string(),
+  last_possible_end: z.string(),
+});
+
+type Route = z.infer<typeof RouteSchema>;
 
 function App() {
   const getQueryParams = () => {
@@ -58,7 +60,7 @@ function App() {
   );
   const [buffer, setBuffer] = useState(initialParams.min_buffer);
 
-  // New state for API results and loading
+  // New state for route API results and loading
   const [results, setResults] = useState<Route[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -98,7 +100,6 @@ function App() {
     setPlotResponses([]); // Reset plot response on new search
 
     try {
-      // Build query parameters for GET request
       const params = new URLSearchParams();
       params.set('section', selectedSection);
       params.set('direction', selectedDirection);
@@ -125,10 +126,9 @@ function App() {
         );
       }
 
-      const data: Route[] = (await response.json()) as Route[];
-      setResults(data || []);
+      const data: Route[] = z.array(RouteSchema).parse(await response.json());
+      setResults(data);
 
-      // Update URL parameters (keeping this for browser history)
       const urlParams = new URLSearchParams();
       urlParams.set('section', selectedSection);
       urlParams.set('direction', selectedDirection);
@@ -212,7 +212,7 @@ function App() {
     );
   };
 
-  // Helper function to get unique locations for a set of routes
+  // Helper function to get unique campsites for a set of routes
   const getUniqueLocations = (routes: Route[]) => {
     const locationSet = new Set<string>();
     routes.forEach((route) => {
@@ -224,7 +224,6 @@ function App() {
     return locations.slice(1, -1);
   };
 
-  // Add this state and effect in your component
   const [windowSize, setWindowSize] = useState({ width: 0, height: 0 });
 
   useEffect(() => {
@@ -328,7 +327,7 @@ function App() {
               <div className='text-center py-8 text-gray-500'>
                 <p>No routes found for your search criteria.</p>
                 <p className='text-sm mt-2'>
-                  Try adjusting your parameters and search again.
+                  Try adjusting your parameters and searching again.
                 </p>
               </div>
             )}
@@ -456,7 +455,7 @@ function App() {
                                       expandedRows.has(rowKey);
 
                                     return (
-                                      <React.Fragment key={rowKey}>
+                                      <Fragment key={rowKey}>
                                         <tr className='hover:bg-gray-50'>
                                           <td className='px-4 py-2'>
                                             <button
@@ -554,7 +553,7 @@ function App() {
                                             </td>
                                           </tr>
                                         )}
-                                      </React.Fragment>
+                                      </Fragment>
                                     );
                                   },
                                 )}
@@ -576,32 +575,42 @@ function App() {
           Recommended Resources
         </h3>
         <div className='text-sm'>
-          <a
-            href='https://metskermaps.com/collections/custom-correct-maps'
-            target='_blank'
-            rel='noopener noreferrer'
-            className='text-blue-600 hover:text-blue-800 underline font-medium'
-          >
-            Custom Correct Topo Maps
-          </a>
-          <span className='mx-2 text-gray-500'>|</span>
-          <a
-            href='https://www.nps.gov/olym/planyourvisit/wilderness-coast.htm'
-            target='_blank'
-            rel='noopener noreferrer'
-            className='text-blue-600 hover:text-blue-800 underline font-medium'
-          >
-            Hiking the Wilderness Coast
-          </a>
-          <span className='mx-2 text-gray-500'>|</span>
-          <a
-            href='https://tidesandcurrents.noaa.gov/noaatidepredictions.html?id=9442396'
-            target='_blank'
-            rel='noopener noreferrer'
-            className='text-blue-600 hover:text-blue-800 underline font-medium'
-          >
-            Tide Tables for La Push
-          </a>
+          <div className='mb-3'>
+            <a
+              href='https://metskermaps.com/collections/custom-correct-maps'
+              target='_blank'
+              rel='noopener noreferrer'
+              className='text-blue-600 hover:text-blue-800 underline font-medium'
+            >
+              Custom Correct Maps
+            </a>
+            : Recommended maps for the Olympic Coast. Much of the distance and
+            restriction data in this tool is based on these maps.
+          </div>
+          <div className='mb-3'>
+            <a
+              href='https://www.nps.gov/olym/planyourvisit/wilderness-coast.htm'
+              target='_blank'
+              rel='noopener noreferrer'
+              className='text-blue-600 hover:text-blue-800 underline font-medium'
+            >
+              Hiking the Wilderness Coast
+            </a>
+            : Information from the National Park Service, including the latest
+            trail conditions and hazards.
+          </div>
+          <div className='mb-3'>
+            <a
+              href='https://tidesandcurrents.noaa.gov/noaatidepredictions.html?id=9442396'
+              target='_blank'
+              rel='noopener noreferrer'
+              className='text-blue-600 hover:text-blue-800 underline font-medium'
+            >
+              Tide Tables for La Push
+            </a>
+            : NOAA tide tables for La Push, Washington. Used for determining
+            tide levels in this tool.
+          </div>
         </div>
       </div>
 

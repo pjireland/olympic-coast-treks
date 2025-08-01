@@ -4,6 +4,7 @@ from datetime import date
 
 import polars as pl
 import pytest
+from numpy.testing import assert_almost_equal
 
 from olympic_coast_treks.tides import get_tide_levels, is_light
 
@@ -42,7 +43,7 @@ def test_get_tide_levels():
     assert (~levels["is_light"][0:70]).all()
     assert levels["is_light"][71:181].all()
     assert (~levels["is_light"][182:]).all()
-    assert levels["height_ft"][1] == 8.773
-    assert levels["height_ft"].mean() == 4.82895
+    assert_almost_equal(levels["height_ft"][1], 8.773, decimal=3)
+    assert_almost_equal(levels["height_ft"].mean(), 4.82895, decimal=5)
     with pytest.raises(ValueError):
         get_tide_levels(date(year=3000, month=3, day=1))
