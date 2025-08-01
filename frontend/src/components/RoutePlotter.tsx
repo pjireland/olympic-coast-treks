@@ -3,6 +3,7 @@
 import type { Layout, PlotData } from 'plotly.js-basic-dist';
 import React from 'react';
 import Plot from 'react-plotly.js';
+import { z } from 'zod/v4';
 
 // Types
 export type PlotEntry = {
@@ -37,6 +38,19 @@ interface RoutePlotterProps {
   onPlotRoute: (rowKey: string, route: MergedRoute) => void;
   getPlotDimensions: () => { width: number; height: number };
 }
+
+const PlotResponseSchema = z.object({
+  data: z.array(z.any()),
+  layout: z
+    .object({
+      meta: z
+        .object({
+          ozette_river_warning: z.boolean().optional(),
+        })
+        .optional(),
+    })
+    .loose(), // Allows all other Layout properties
+});
 
 interface PlotResponse {
   data: PlotData[];
@@ -123,7 +137,9 @@ export const handlePlotRouteAPI = async (
       );
     }
 
-    const responseData: PlotResponse = (await response.json()) as PlotResponse;
+    const responseData: PlotResponse = PlotResponseSchema.parse(
+      await response.json(),
+    );
 
     // Store the response in state so we can display it
     setPlotResponses((prev) => {
