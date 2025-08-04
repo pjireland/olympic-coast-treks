@@ -5,11 +5,16 @@ import React from 'react';
 import Plot from 'react-plotly.js';
 import { z } from 'zod/v4';
 
+const API_BASE_URL: string = import.meta.env.VITE_API_BASE_URL as string;
+
 // Types
-export type PlotEntry = {
-  rowKey: string;
+interface PlotResponse {
   data: PlotData[];
   layout: Partial<Layout> & { meta?: { ozette_river_warning?: boolean } };
+}
+
+export type PlotEntry = PlotResponse & {
+  rowKey: string;
 };
 
 export type MergedRoute = {
@@ -51,11 +56,6 @@ const PlotResponseSchema = z.object({
     })
     .loose(), // Allows all other Layout properties
 });
-
-interface PlotResponse {
-  data: PlotData[];
-  layout: Partial<Layout> & { meta?: { ozette_river_warning?: boolean } };
-}
 
 // Helper functions
 export const timeToMinutes = (timeString: string): number => {
@@ -121,15 +121,12 @@ export const handlePlotRouteAPI = async (
     params.set('end_location', route.end_location);
     params.set('speed', hikingSpeed.toString());
 
-    const response = await fetch(
-      `http://localhost:8000/plot?${params.toString()}`,
-      {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+    const response = await fetch(`${API_BASE_URL}/plot?${params.toString()}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
       },
-    );
+    });
 
     if (!response.ok) {
       throw new Error(
