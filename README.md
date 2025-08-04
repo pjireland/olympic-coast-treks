@@ -75,7 +75,7 @@ We recommend using the Node Version Manager (`nvm`) to install `npm`.
 Directions for installing `nvm` are available
 [here](https://github.com/nvm-sh/nvm).
 
-One `npm` is installed, call `npm run dev` from within the `frontend`
+Once `npm` is installed, call `npm run dev` from within the `frontend`
 subdirectory to serve the frontend locally.
 Note to make API calls from the front end, you'll need to also have a local
 API running, per the earlier directions.
