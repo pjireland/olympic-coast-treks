@@ -16,6 +16,7 @@ dependencies = [
     "plotly>=6.2.0",
     "kaleido>=1.0.0",
     "numpy>=2.0.2",
+    "gunicorn>=23.0.0",
 ]
 
 [tool.pytest.ini_options]
