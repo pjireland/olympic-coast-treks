@@ -1,0 +1,75 @@
+# .github/workflows/deploy.yml
+name: Deploy to Google Cloud Run
+
+on:
+  release:
+    types: [published]
+
+env:
+  PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+  SERVICE_NAME: olympic-coast-treks
+  REGION: us-west1
+
+jobs:
+  deploy:
+    name: Deploy to Cloud Run
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Configure Docker to use gcloud as credential helper
+        run: gcloud auth configure-docker
+
+      - name: Build Docker image
+        run: |
+          docker build -t gcr.io/$PROJECT_ID/$SERVICE_NAME:${{ github.event.release.tag_name }} .
+          docker build -t gcr.io/$PROJECT_ID/$SERVICE_NAME:latest .
+
+      - name: Push Docker image
+        run: |
+          docker push gcr.io/$PROJECT_ID/$SERVICE_NAME:${{ github.event.release.tag_name }}
+          docker push gcr.io/$PROJECT_ID/$SERVICE_NAME:latest
+
+      - name: Deploy to Cloud Run
+        run: |
+          gcloud run deploy $SERVICE_NAME \
+            --image gcr.io/$PROJECT_ID/$SERVICE_NAME:${{ github.event.release.tag_name }} \
+            --platform managed \
+            --region $REGION \
+            --allow-unauthenticated \
+            --max-instances=3 \
+            --timeout=30s \
+            --cpu=1 \
+            --memory=512Mi \
+            --concurrency=10
+
+      - name: Get service URL
+        run: |
+          SERVICE_URL=$(gcloud run services describe $SERVICE_NAME --platform managed --region $REGION --format 'value(status.url)')
+          echo "Service deployed at: $SERVICE_URL"
+          echo "SERVICE_URL=$SERVICE_URL" >> $GITHUB_ENV
+
+      - name: Create deployment comment
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.repos.createCommitComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              commit_sha: context.sha,
+              body: `🚀 Deployed to Cloud Run: ${process.env.SERVICE_URL}`
+            })
