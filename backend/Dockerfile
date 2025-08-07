@@ -1,36 +1,80 @@
-# Use a Python image with uv pre-installed
-FROM ghcr.io/astral-sh/uv:python3.12-bookworm-slim
+# .github/workflows/deploy.yml
+name: Deploy to Google Cloud Run
 
-# Install the project into `/app`
-WORKDIR /app
+on:
+release:
+types: [published]
+workflow_dispatch: # Allows manual triggering
 
-# Enable bytecode compilation
-ENV UV_COMPILE_BYTECODE=1
+env:
+PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+SERVICE_NAME: olympic-coast-treks
+REGION: us-west1
 
-# Copy from the cache instead of linking since it's a mounted volume
-ENV UV_LINK_MODE=copy
+jobs:
+deploy:
+name: Deploy to Cloud Run
+runs-on: ubuntu-latest
 
-# Install the project's dependencies using the lockfile and settings
-RUN --mount=type=cache,target=/root/.cache/uv \
-    --mount=type=bind,source=uv.lock,target=uv.lock \
-    --mount=type=bind,source=pyproject.toml,target=pyproject.toml \
-    uv sync --locked --no-install-project --no-dev
+permissions:
+contents: read
+id-token: write
 
-# Then, add the rest of the project source code and install it
-# Installing separately from its dependencies allows optimal layer caching
-COPY . /app
-RUN --mount=type=cache,target=/root/.cache/uv \
-    uv sync --locked --no-dev
+steps:
+- name: Checkout code
+uses: actions/checkout@v4
 
-# Place executables in the environment at the front of the path
-ENV PATH="/app/.venv/bin:$PATH"
+- name: Authenticate to Google Cloud
+uses: google-github-actions/auth@v2
+with:
+workload_identity_provider: ${{ secrets.WIF_PROVIDER }}
+service_account: ${{ secrets.WIF_SERVICE_ACCOUNT }}
 
-# Reset the entrypoint, don't invoke `uv`
-ENTRYPOINT []
+- name: Set up Cloud SDK
+uses: google-github-actions/setup-gcloud@v2
 
-# Expose the port
-EXPOSE 8080
+- name: Configure Docker to use gcloud as credential helper
+run: gcloud auth configure-docker
 
-# Use Gunicorn with Uvicorn workers to run your application
-# Now that gunicorn is installed in the system PATH, this command will work
-CMD ["/bin/sh", "-c", "gunicorn -w 2 -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:${PORT} olympic_coast_treks.api:app"]
+- name: Set up Docker Buildx
+uses: docker/setup-buildx-action@v3
+
+- name: Build and push Docker image
+run: |
+cd backend
+docker buildx build \
+    --platform linux/amd64 \
+    -t gcr.io/$PROJECT_ID/$SERVICE_NAME:${{ github.event.release.tag_name || 'latest' }} \
+    -t gcr.io/$PROJECT_ID/$SERVICE_NAME:latest \
+    --push \
+    .
+
+- name: Deploy to Cloud Run
+run: |
+gcloud run deploy $SERVICE_NAME \
+    --image gcr.io/$PROJECT_ID/$SERVICE_NAME:${{ github.event.release.tag_name || 'latest' }} \
+    --platform managed \
+    --region $REGION \
+    --allow-unauthenticated \
+    --max-instances=3 \
+    --timeout=30s \
+    --cpu=1 \
+    --memory=512Mi \
+    --concurrency=10
+
+- name: Get service URL
+run: |
+SERVICE_URL=$(gcloud run services describe $SERVICE_NAME --platform managed --region $REGION --format 'value(status.url)')
+echo "Service deployed at: $SERVICE_URL"
+echo "SERVICE_URL=$SERVICE_URL" >> $GITHUB_ENV
+
+- name: Create deployment comment
+uses: actions/github-script@v7
+with:
+script: |
+github.rest.repos.createCommitComment({
+owner: context.repo.owner,
+repo: context.repo.repo,
+commit_sha: context.sha,
+body: `🚀 Deployed to Cloud Run: ${process.env.SERVICE_URL}`
+})
