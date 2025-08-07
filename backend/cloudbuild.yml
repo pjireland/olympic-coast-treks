@@ -1,11 +1,16 @@
-# backend/cloudbuild.yaml
 steps:
   - name: "gcr.io/cloud-builders/docker"
-    entrypoint: "bash"
+    entrypoint: "docker"
     args:
-      - "-c"
-      - |
-        docker buildx create --use
-        docker buildx build --platform linux/amd64 -t $IMAGE_URL --push .
-    env:
-      - "DOCKER_BUILDKIT=1"
+      [
+        "buildx",
+        "build",
+        "--platform",
+        "linux/amd64",
+        "-t",
+        "us-west1-docker.pkg.dev/$PROJECT_ID/cloud-run-source-deploy/olympic-coast-treks:$COMMIT_SHA",
+        "--push",
+        ".",
+      ]
+
+timeout: "1200s"
