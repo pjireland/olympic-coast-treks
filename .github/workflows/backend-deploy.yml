@@ -112,15 +112,3 @@ jobs:
           SERVICE_URL=$(gcloud run services describe $SERVICE_NAME --platform managed --region $REGION --format 'value(status.url)')
           echo "Service deployed at: $SERVICE_URL"
           echo "SERVICE_URL=$SERVICE_URL" >> $GITHUB_ENV
-
-      - name: Create deployment comment
-        uses: actions/github-script@v7
-        if: github.event_name == 'release'
-        with:
-          script: |
-            github.rest.repos.createCommitComment({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              commit_sha: context.sha,
-              body: `🚀 Deployed to Cloud Run: ${process.env.SERVICE_URL}`
-            })
