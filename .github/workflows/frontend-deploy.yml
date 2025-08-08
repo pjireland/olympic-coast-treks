@@ -44,31 +44,10 @@ jobs:
           cd frontend
           npm run build
 
-      - name: Debug Authentication Flow
-        run: |
-          echo "=== Step 1: Check WIF Authentication ==="
-          echo "Credentials file path: ${{ steps.auth.outputs.credentials_file_path }}"
-          echo "Service Account: ${{ secrets.WIF_SERVICE_ACCOUNT }}"
-          echo "Project ID: ${{ secrets.FIREBASE_PROJECT_ID }}"
-
-          echo "=== Step 2: Check gcloud auth ==="
-          gcloud auth list --format="table(account,status)"
-          gcloud config get-value account
-
-          echo "=== Step 3: Test Google Cloud access ==="
-          gcloud projects describe ${{ secrets.FIREBASE_PROJECT_ID }} || echo "Failed to access project via gcloud"
-
-          echo "=== Step 4: Test Firebase CLI authentication ==="
-          cd frontend
-          export GOOGLE_APPLICATION_CREDENTIALS="${{ steps.auth.outputs.credentials_file_path }}"
-
-          echo "Credentials file exists: $(test -f "$GOOGLE_APPLICATION_CREDENTIALS" && echo 'YES' || echo 'NO')"
-
-          # Try to authenticate Firebase CLI
-          npx firebase-tools@latest login:ci --token "$(gcloud auth print-access-token)" || echo "Firebase login failed"
-
-          echo "=== Step 5: List all Firebase projects (should show your project) ==="
-          npx firebase-tools@latest projects:list || echo "Cannot list Firebase projects"
-
-          echo "=== Step 6: Try to access specific project ==="
-          npx firebase-tools@latest use ${{ secrets.FIREBASE_PROJECT_ID }} || echo "Cannot access specific project"
+      - name: Deploy to Firebase Hosting
+        uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          repoToken: "${{ secrets.GITHUB_TOKEN }}"
+          firebaseServiceAccount: "${{ steps.auth.outputs.credentials_file_path }}"
+          projectId: "${{ secrets.FIREBASE_PROJECT_ID }}"
+          entryPoint: "./frontend"
