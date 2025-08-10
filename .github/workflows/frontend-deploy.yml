@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
 
 env:
-  NODE_VERSION: "22"
+  NODE_VERSION: "24"
 
 jobs:
   deploy:
@@ -26,6 +26,7 @@ jobs:
         with:
           workload_identity_provider: ${{ secrets.WIF_PROVIDER }}
           service_account: ${{ secrets.WIF_SERVICE_ACCOUNT }}
+          create_credentials_file: true
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -45,9 +46,10 @@ jobs:
           npm run build
 
       - name: Deploy to Firebase Hosting
-        uses: FirebaseExtended/action-hosting-deploy@v0
-        with:
-          repoToken: "${{ secrets.GITHUB_TOKEN }}"
-          firebaseServiceAccount: "${{ steps.auth.outputs.credentials_file_path }}"
-          projectId: "${{ secrets.FIREBASE_PROJECT_ID }}"
-          entryPoint: "./frontend"
+        run: |
+          cd frontend
+          export GOOGLE_APPLICATION_CREDENTIALS="${{ steps.auth.outputs.credentials_file_path }}"
+          npx firebase-tools@latest deploy \
+            --only hosting \
+            --project ${{ secrets.FIREBASE_PROJECT_ID }} \
+            --non-interactive
