@@ -2,9 +2,9 @@ name: Backend
 
 on:
   push:
-    branches: [ "main" ]
+    branches: ["main"]
   pull_request:
-    branches: [ "main" ]
+    branches: ["main"]
 
 jobs:
   test:
@@ -15,22 +15,23 @@ jobs:
         working-directory: ./backend
 
     steps:
-    - uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-    - name: Install uv
-      uses: astral-sh/setup-uv@v5
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
 
-    - name: Install the project
-      run: uv sync --locked --all-extras --dev
+      - name: Install the project
+        run: uv sync --locked --all-extras --dev
 
-    - name: Install dependencies
-      run: uv sync --all-extras --dev
+      - name: Install dependencies
+        run: uv sync --all-extras --dev
 
-    - name: Run ruff linting
-      run: uv run ruff check .
+      - name: Run ruff linting
+        run: uv run ruff check .
 
-    - name: Run ruff formatting
-      run: uv run ruff format --check --diff .
+      - name: Run ruff formatting
+        run: uv run ruff format --check --diff .
 
-    - name: Run pytest
-      run: uv run pytest -v
+      - name: Run pytest
+        run: uv run pytest -v
