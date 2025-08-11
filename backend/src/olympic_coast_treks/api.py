@@ -17,8 +17,8 @@ app.add_middleware(
     allow_origins=[
         "http://localhost",
         "http://localhost:5173",
-        "https://olympic-coast-treks.web.app/",
-        "https://olympic-coast-treks.firebaseapp.com/",
+        "https://olympic-coast-treks.web.app",
+        "https://olympic-coast-treks.firebaseapp.com",
     ],
     allow_credentials=True,
     allow_methods=["*"],
