@@ -42,3 +42,4 @@ packages = ["src/olympic_coast_treks"]
 
 [tool.hatch.version]
 source = "vcs"
+root = ".."  # Tell hatch-vcs to look one level up for .git
