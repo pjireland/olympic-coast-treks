@@ -1,6 +1,6 @@
 [project]
 name = "olympic-coast-treks"
-version = "0.0.0"
+dynamic = ["version"]
 description = "Tool for planning backpacking treks along the Olympic Coast"
 requires-python = ">=3.9"
 dependencies = [
@@ -34,8 +34,11 @@ dev = [
 line-length = 79
 
 [build-system]
-requires = ["hatchling"]
+requires = ["hatchling", "hatch-vcs"]
 build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/olympic_coast_treks"]
+
+[tool.hatch.version]
+source = "vcs"

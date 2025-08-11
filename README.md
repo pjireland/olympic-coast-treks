@@ -5,6 +5,10 @@ for planning multi-night backpacking treks along the the Olympic Coast
 in Washington, taking into account route information, tide levels,
 tidal restrictions, and sunrise and sunset times.
 
+## Planning routes
+
+Use the deployed web app (https://olympic-coast-treks.web.app) to plan routes.
+
 ## Disclaimer
 
 While this tool is designed to assist with planning, it is not intended to be a
@@ -14,13 +18,6 @@ tide tables, and any information provided by Olympic National Park,
 the Ozette Indian Reservation, and the Makah Reservation.
 
 Refer to the software license for information about use and liability.
-
-## Planning routes
-
-The simplest approach for planning routes is through the web interface.
-This will be deployed to the web soon.
-In the meantime, follow the frontend instructions below to serve a local
-instance of the frontend.
 
 ## Backend development
 
