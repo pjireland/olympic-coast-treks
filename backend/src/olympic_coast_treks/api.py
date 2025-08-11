@@ -14,7 +14,12 @@ from .process import calc_routes
 app = FastAPI(title="Olympic Coast Treks API")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost", "http://localhost:5173"],
+    allow_origins=[
+        "http://localhost",
+        "http://localhost:5173",
+        "https://olympic-coast-treks.web.app/",
+        "https://olympic-coast-treks.firebaseapp.com/",
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
