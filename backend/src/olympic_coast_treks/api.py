@@ -2,6 +2,7 @@
 
 import json
 from datetime import date, datetime
+from importlib.metadata import version
 from typing import Literal
 
 from fastapi import FastAPI, HTTPException
@@ -11,7 +12,7 @@ from pydantic import BaseModel
 from .plot import plot_tides_and_restrictions
 from .process import calc_routes
 
-app = FastAPI(title="Olympic Coast Treks API")
+app = FastAPI(title="Olympic Coast Treks API", version=version("olympic-coast-treks"))
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
