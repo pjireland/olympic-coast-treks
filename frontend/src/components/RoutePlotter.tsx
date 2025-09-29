@@ -96,22 +96,10 @@ export const handlePlotRouteAPI = async (
   hikingSpeed: number,
   setPlotResponses: React.Dispatch<React.SetStateAction<PlotEntry[]>>,
 ) => {
-  // Convert departureTime (minutes from midnight) to a full datetime string
-  const routeDate = new Date(route.date);
   const hours = Math.floor(departureTime / 60);
   const minutes = departureTime % 60;
-  routeDate.setHours(hours, minutes, 0, 0);
   const pad = (n: number) => n.toString().padStart(2, '0');
-  const startTime =
-    routeDate.getFullYear() +
-    '-' +
-    pad(routeDate.getMonth() + 1) +
-    '-' +
-    pad(routeDate.getDate() + 1) +
-    'T' +
-    pad(routeDate.getHours()) +
-    ':' +
-    pad(routeDate.getMinutes());
+  const startTime = route.date + 'T' + pad(hours) + ':' + pad(minutes);
 
   try {
     // Build query parameters for GET request
