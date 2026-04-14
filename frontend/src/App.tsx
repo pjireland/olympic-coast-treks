@@ -393,7 +393,7 @@ function App() {
                             onClick={() =>
                               toggleOption(Number(campsiteCombination))
                             }
-                            className='flex-shrink-0 w-5 h-5 p-0 text-lg font-bold text-gray-600 hover:text-gray-800 transition-colors flex items-center justify-center'
+                            className='flex-shrink-0 w-5 h-5 p-0 text-lg font-bold text-gray-600 hover:text-gray-800 transition-colors flex items-center justify-center bg-transparent'
                           >
                             {expandedOptions.has(Number(campsiteCombination))
                               ? '−'
@@ -437,7 +437,7 @@ function App() {
                         </div>
                         {expandedOptions.has(Number(campsiteCombination)) && (
                           <div className='overflow-x-auto'>
-                            <table className='w-full bg-white text-sm'>
+                            <table className='w-full bg-white text-gray-900 text-sm'>
                               <thead>
                                 <tr className='text-left underline'>
                                   <th className='px-4 py-2 w-8'></th>
@@ -462,7 +462,7 @@ function App() {
                                           <td className='px-4 py-2'>
                                             <button
                                               onClick={() => toggleRow(rowKey)}
-                                              className='flex-shrink-0 w-5 h-5 p-0 text-lg font-bold text-gray-600 hover:text-gray-800 transition-colors flex items-center justify-center'
+                                              className='flex-shrink-0 w-5 h-5 p-0 text-lg font-bold text-gray-600 hover:text-gray-800 transition-colors flex items-center justify-center bg-transparent'
                                             >
                                               {isRowExpanded ? '−' : '+'}
                                             </button>
@@ -576,7 +576,7 @@ function App() {
         <h3 className='text-lg font-semibold text-gray-800 mb-3 text-center'>
           Recommended Resources
         </h3>
-        <div className='text-sm'>
+        <div className='text-sm text-gray-900'>
           <div className='mb-3'>
             <a
               href='https://metskermaps.com/collections/custom-correct-maps'
@@ -589,7 +589,7 @@ function App() {
             : Recommended maps for the Olympic Coast. Much of the distance and
             restriction data in this tool is based on these maps.
           </div>
-          <div className='mb-3'>
+          <div className='mb-3 text-gray-900'>
             <a
               href='https://www.nps.gov/olym/planyourvisit/wilderness-coast.htm'
               target='_blank'
@@ -601,7 +601,7 @@ function App() {
             : Information from the National Park Service, including the latest
             trail conditions and hazards.
           </div>
-          <div className='mb-3'>
+          <div className='mb-3 text-gray-900'>
             <a
               href='https://tidesandcurrents.noaa.gov/noaatidepredictions.html?id=9442396'
               target='_blank'
