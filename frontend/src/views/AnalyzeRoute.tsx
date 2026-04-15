@@ -216,20 +216,17 @@ function App() {
 
   return (
     <main className='min-h-screen bg-gray-100 p-8'>
-      <h1 className='text-4xl font-bold text-gray-800 text-center mb-8'>
-        Olympic Coast Trek Planner
-      </h1>
       <div className='w-fit mx-auto space-y-0'>
         <div className='bg-white p-6 rounded-t-lg shadow-md text-left'>
           <div className='flex gap-6 items-start'>
             {/* New Start and End Dropdowns */}
             <StartEndDropdown
-              title='Start At'
+              title='Start at'
               initialLabel={startLocation}
               onSelect={setStartLocation}
             />
             <StartEndDropdown
-              title='End At'
+              title='End at'
               initialLabel={endLocation}
               onSelect={setEndLocation}
             />
