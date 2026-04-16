@@ -282,6 +282,14 @@ function App() {
               </div>
             )}
 
+            {!isLoading && !error && results.length === 0 && (
+              <div className='text-center py-10 bg-gray-50 rounded-lg border border-gray-200'>
+                <p className='text-gray-600'>
+                  No routes found.
+                </p>
+              </div>
+            )}
+
             {!isLoading && !error && results.length > 0 && (
               <div className='space-y-8'>
                 {Object.entries(
