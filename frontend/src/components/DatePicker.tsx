@@ -20,6 +20,7 @@ const DatePicker = ({ date, setDate }: DatePickerProps) => {
           </label>
           <input
             type='date'
+            style={{ colorScheme: 'light' }}
             value={date}
             onChange={handleDateChange}
             min={today}
