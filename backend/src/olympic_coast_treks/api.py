@@ -9,12 +9,11 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
+from .data import LOCATIONS
 from .plot import plot_tides_and_restrictions
 from .process import calc_routes
 
-app = FastAPI(
-    title="Olympic Coast Treks API", version=version("olympic-coast-treks")
-)
+app = FastAPI(title="Olympic Coast Treks API", version=version("olympic-coast-treks"))
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
@@ -52,9 +51,7 @@ def get_health():
 
 
 @app.get("/plot")
-def get_plot(
-    start_location: str, end_location: str, start_time: datetime, speed: float
-) -> PlotlyFigureResponse:
+def get_plot(start_location: str, end_location: str, start_time: datetime, speed: float) -> PlotlyFigureResponse:
     """Get a plot of tides and restrictions given route information.
 
     Parameters
@@ -182,3 +179,45 @@ def get_routes(
     except ValueError as e:
         raise HTTPException(400, str(e))
     return [Route(**r) for r in routes.to_dicts()]
+
+
+@app.get("/locations")
+def get_locations() -> list[str]:
+    """Get possible named locations along the Olympic coast."""
+    return sorted({loc["name"] for locs in LOCATIONS.values() for loc in locs})
+
+
+@app.get("/accessible-locations")
+def get_accessible_locations(current_location_name: str) -> list[str]:
+    """Get locations that can be accessed from the current location.
+
+    Results are sorted by distance, with the closest locations given first.
+
+    Note: currently assumes locations must be in the same section to be
+    accessible, which isn't always the case.
+
+    Parameters
+    ----------
+    current_location_name: str
+        The name of the current location.
+    """
+    target_info = {
+        section: loc["distance_miles"]
+        for section, locs in LOCATIONS.items()
+        for loc in locs
+        if loc["name"] == current_location_name
+    }
+    if not target_info:
+        raise HTTPException(
+            400, detail=f"Invalid current location: '{current_location_name}'"
+        )
+    candidates = {}
+    for section, target_mile in target_info.items():
+        for loc in LOCATIONS[section]:
+            name = loc["name"]
+            if name == current_location_name:
+                continue
+            dist = abs(loc["distance_miles"] - target_mile)
+            if name not in candidates or dist < candidates[name]:
+                candidates[name] = dist
+    return sorted(candidates, key=candidates.get)

@@ -87,3 +87,22 @@ def test_get_routes():
         "``min_daily_distance`` and ``max_daily_distance`` must both be "
         "positive"
     )
+
+
+def test_get_locations():
+    locations = client.get("/locations").json()
+    assert len(locations)
+    assert isinstance(locations, list)
+    assert all(isinstance(loc, str) for loc in locations)
+
+
+def test_get_accessible_locations():
+    # Valid input
+    accessible_locations = client.get(
+        "/accessible-locations", params={"current_location_name": "Ozette Trailhead"}
+    ).json()
+    assert len(accessible_locations) == 21
+    assert accessible_locations[0:4] == ["Sand Point", "Cape Alava", "South Sand Point", "Tskawahyah Island"]
+    # Invalid input
+    resp = client.get("/accessible-locations", params={"current_location_name": "invalid"})
+    assert resp.json()["detail"] == "Invalid current location: 'invalid'"
