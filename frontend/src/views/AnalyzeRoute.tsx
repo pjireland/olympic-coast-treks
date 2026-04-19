@@ -365,50 +365,10 @@ function App() {
                               <tbody>
                                 {Object.values(mergedRoutes).map((route) => {
                                   const rowKey = `${route.campsite_combination}-${route.date}-${route.start_location}`;
-                                  const isRowExpanded =
-                                    expandedRows.has(rowKey);
 
                                   return (
                                     <Fragment key={rowKey}>
-                                      <tr className='hover:bg-gray-50 border-t border-gray-100'>
-                                        <td className='px-4 py-2'>
-                                          <button
-                                            onClick={() => toggleRow(rowKey)}
-                                            className='w-5 h-5 text-lg font-bold text-gray-600 hover:text-gray-800 flex items-center justify-center bg-transparent'
-                                          >
-                                            {isRowExpanded ? '−' : '+'}
-                                          </button>
-                                        </td>
-                                        <td className='px-4 py-2'>
-                                          {formatDate(route.date)}
-                                        </td>
-                                        <td className='px-4 py-2'>
-                                          {route.start_location}
-                                        </td>
-                                        <td className='px-4 py-2'>
-                                          {route.end_location}
-                                        </td>
-                                        <td className='px-4 py-2'>
-                                          {route.distance.toFixed(1)} mi
-                                        </td>
-                                        <td className='px-4 py-2'>
-                                          {route.start_times.map((tw, i) => (
-                                            <div key={i}>
-                                              {formatTimeOnly(tw.first)} –{' '}
-                                              {formatTimeOnly(tw.last)}
-                                            </div>
-                                          ))}
-                                        </td>
-                                        <td className='px-4 py-2'>
-                                          {route.end_times.map((tw, i) => (
-                                            <div key={i}>
-                                              {formatTimeOnly(tw.first)} –{' '}
-                                              {formatTimeOnly(tw.last)}
-                                            </div>
-                                          ))}
-                                        </td>
-                                      </tr>
-                                      {isRowExpanded && (
+                                      {
                                         <tr className='bg-blue-50'>
                                           <td className='px-4 py-3' colSpan={7}>
                                             <RoutePlotter
@@ -433,7 +393,7 @@ function App() {
                                             />
                                           </td>
                                         </tr>
-                                      )}
+                                      }
                                     </Fragment>
                                   );
                                 })}

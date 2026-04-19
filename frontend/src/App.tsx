@@ -1,4 +1,10 @@
-import { BrowserRouter, NavLink, Route, Routes } from 'react-router-dom';
+import {
+  BrowserRouter,
+  Navigate,
+  NavLink,
+  Route,
+  Routes,
+} from 'react-router-dom';
 
 import AnalyzeRoute from './views/AnalyzeRoute';
 import FindRoutes from './views/FindRoutes';
@@ -46,8 +52,7 @@ function App() {
           <Routes>
             <Route path='/find' element={<FindRoutes />} />
             <Route path='/analyze' element={<AnalyzeRoute />} />
-            {/* Redirect root to find */}
-            <Route path='/' element={<FindRoutes />} />
+            <Route path='/' element={<Navigate to='/find' replace />} />
           </Routes>
         </div>
 
