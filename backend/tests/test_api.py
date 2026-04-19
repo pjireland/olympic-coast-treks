@@ -100,14 +100,14 @@ def test_get_accessible_locations():
     # Valid input
     accessible_locations = client.get(
         "/accessible-locations",
-        params={"current_location_name": "Ozette Trailhead"}
+        params={"current_location_name": "Ozette Trailhead"},
     ).json()
     assert len(accessible_locations) == 21
     assert accessible_locations[0:4] == [
         "Sand Point",
         "Cape Alava",
         "South Sand Point",
-        "Tskawahyah Island"
+        "Tskawahyah Island",
     ]
     # Invalid input
     resp = client.get(
