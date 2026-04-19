@@ -13,7 +13,9 @@ from .data import LOCATIONS
 from .plot import plot_tides_and_restrictions
 from .process import calc_routes
 
-app = FastAPI(title="Olympic Coast Treks API", version=version("olympic-coast-treks"))
+app = FastAPI(
+    title="Olympic Coast Treks API", version=version("olympic-coast-treks")
+)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
@@ -51,7 +53,9 @@ def get_health():
 
 
 @app.get("/plot")
-def get_plot(start_location: str, end_location: str, start_time: datetime, speed: float) -> PlotlyFigureResponse:
+def get_plot(
+    start_location: str, end_location: str, start_time: datetime, speed: float
+) -> PlotlyFigureResponse:
     """Get a plot of tides and restrictions given route information.
 
     Parameters
