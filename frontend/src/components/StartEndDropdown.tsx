@@ -1,69 +1,83 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { z } from 'zod';
 
-type Option = {
-  id: string;
-  label: string;
-  section: string; // Grouping category
-};
+const API_BASE_URL: string = import.meta.env.VITE_API_BASE_URL as string;
 
 interface StartEndDropdownProps {
   onSelect?: (label: string) => void;
   initialLabel?: string;
   title?: string;
+  dependsOn?: string;
 }
-
-const options: Option[] = [
-  // Current active locations
-  { id: 'oil-city', label: 'Oil City', section: 'Coastline' },
-  { id: 'la-push', label: 'La Push Road', section: 'Coastline' },
-  { id: 'rialto', label: 'Rialto Beach', section: 'Coastline' },
-  { id: 'ozette', label: 'Ozette Trailhead', section: 'Coastline' },
-  { id: 'shi-shi', label: 'Shi Shi Beach', section: 'Coastline' },
-
-  // Placeholder section for later use
-  {
-    id: 'future-1',
-    label: 'Second Beach (Coming Soon)',
-    section: 'Future Locations',
-  },
-  {
-    id: 'future-2',
-    label: 'Third Beach (Coming Soon)',
-    section: 'Future Locations',
-  },
-];
 
 export default function StartEndDropdown({
   onSelect,
   initialLabel,
   title = 'Location',
+  dependsOn,
 }: StartEndDropdownProps) {
-  const [selectedValue, setSelectedValue] = useState<string>(options[0].label);
+  const [locations, setLocations] = useState<string[]>([]);
+  const [selectedValue, setSelectedValue] = useState<string>('');
+  const [loading, setLoading] = useState<boolean>(false);
 
-  // Group options by section
-  const groupedOptions = options.reduce(
-    (acc, opt) => {
-      if (!acc[opt.section]) acc[opt.section] = [];
-      acc[opt.section].push(opt);
-      return acc;
-    },
-    {} as Record<string, Option[]>,
-  );
+  // Use a ref to keep track of the value for comparison inside useEffect
+  // without triggering the dependency lint warning.
+  const currentSelectionRef = useRef(selectedValue);
 
   useEffect(() => {
-    const targetLabel = initialLabel || options[0].label;
-    const matchingOption = options.find((opt) => opt.label === targetLabel);
-    if (matchingOption) {
-      setSelectedValue(matchingOption.label);
+    async function fetchLocations() {
+      const url = dependsOn
+        ? `${API_BASE_URL}/accessible-locations?current_location_name=${encodeURIComponent(dependsOn)}`
+        : `${API_BASE_URL}/locations`;
+
+      if (dependsOn === '' && title.toLowerCase().includes('end')) {
+        setLocations([]);
+        setSelectedValue('');
+        currentSelectionRef.current = '';
+        return;
+      }
+
+      try {
+        setLoading(true);
+        const response = await fetch(url, {
+          method: 'GET',
+          headers: { 'Content-Type': 'application/json' },
+        });
+
+        if (!response.ok)
+          throw new Error(`API request failed: ${response.status}`);
+
+        const data = z.array(z.string()).parse(await response.json());
+        setLocations(data);
+
+        let nextValue = '';
+        if (initialLabel && data.includes(initialLabel)) {
+          nextValue = initialLabel;
+        } else if (data.length > 0) {
+          nextValue = data[0];
+        }
+
+        // Only update and notify if the value is actually different
+        if (nextValue !== currentSelectionRef.current) {
+          setSelectedValue(nextValue);
+          currentSelectionRef.current = nextValue;
+          if (onSelect) onSelect(nextValue);
+        }
+      } catch (error) {
+        console.error('Error fetching locations:', error);
+      } finally {
+        setLoading(false);
+      }
     }
-  }, [initialLabel]);
+
+    void fetchLocations();
+  }, [dependsOn, initialLabel, onSelect, title]); // selectedValue is no longer needed here
 
   const handleChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const label = e.target.value;
-    setSelectedValue(label);
-    if (onSelect) {
-      onSelect(label);
-    }
+    const value = e.target.value;
+    setSelectedValue(value);
+    currentSelectionRef.current = value; // Keep the ref in sync
+    if (onSelect) onSelect(value);
   };
 
   return (
@@ -74,17 +88,20 @@ export default function StartEndDropdown({
       <select
         value={selectedValue}
         onChange={handleChange}
-        className='w-full h-10 px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-gray-800'
+        className='w-full h-10 px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-gray-800 disabled:bg-gray-100'
+        disabled={loading || locations.length === 0}
       >
-        {Object.entries(groupedOptions).map(([sectionName, sectionItems]) => (
-          <optgroup key={sectionName} label={sectionName}>
-            {sectionItems.map((opt) => (
-              <option key={opt.id} value={opt.label}>
-                {opt.label}
+        {loading ? (
+          <option>Loading...</option>
+        ) : (
+          <>
+            {locations.map((loc) => (
+              <option key={loc} value={loc}>
+                {loc}
               </option>
             ))}
-          </optgroup>
-        ))}
+          </>
+        )}
       </select>
     </div>
   );

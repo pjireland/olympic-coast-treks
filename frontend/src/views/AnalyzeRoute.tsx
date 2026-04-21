@@ -48,6 +48,8 @@ function App() {
   const initialParams = getQueryParams();
 
   // Updated Location State
+  const [start, setStart] = useState('');
+
   const [startLocation, setStartLocation] = useState(
     initialParams.start_location,
   );
@@ -220,16 +222,16 @@ function App() {
         <div className='bg-white p-6 rounded-t-lg shadow-md text-left'>
           <div className='flex gap-6 items-start'>
             {/* New Start and End Dropdowns */}
-            <StartEndDropdown
-              title='Start at'
-              initialLabel={startLocation}
-              onSelect={setStartLocation}
-            />
-            <StartEndDropdown
-              title='End at'
-              initialLabel={endLocation}
-              onSelect={setEndLocation}
-            />
+            return (
+            <>
+              <StartEndDropdown
+                title='Start at'
+                onSelect={(val) => setStart(val)}
+              />
+
+              <StartEndDropdown title='End at' dependsOn={start} />
+            </>
+            );
             <DatePicker date={startDate} setDate={setStartDate} />
           </div>
 
