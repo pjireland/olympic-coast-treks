@@ -62,6 +62,7 @@ const DateRangePicker = ({
           </label>
           <input
             type='date'
+            style={{ colorScheme: 'light' }}
             value={startDate}
             onChange={handleStartDateChange}
             min={today}
@@ -74,6 +75,7 @@ const DateRangePicker = ({
           </label>
           <input
             type='date'
+            style={{ colorScheme: 'light' }}
             value={endDate}
             onChange={handleEndDateChange}
             min={getMinEndDate(startDate)}
