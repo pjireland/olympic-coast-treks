@@ -1,6 +1,6 @@
 import '../App.css';
 
-import { Fragment, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { z } from 'zod/v4';
 
 import DatePicker from '../components/DatePicker';
@@ -12,23 +12,21 @@ import RoutePlotter, {
   type PlotEntry,
 } from '../components/RoutePlotter';
 import StartEndDropdown from '../components/StartEndDropdown';
-import TidalBufferSlider from '../components/TidalBufferSlider';
 
 const API_BASE_URL: string = import.meta.env.VITE_API_BASE_URL as string;
 
-const RouteSchema = z.object({
-  campsite_combination: z.number(),
-  date: z.string(),
-  start_location: z.string(),
-  end_location: z.string(),
-  distance: z.number(),
-  first_possible_start: z.string(),
-  last_possible_start: z.string(),
-  first_possible_end: z.string(),
-  last_possible_end: z.string(),
+const PlotResponseSchema = z.object({
+  data: z.array(z.any()),
+  layout: z
+    .object({
+      meta: z
+        .object({
+          ozette_river_warning: z.boolean().optional(),
+        })
+        .optional(),
+    })
+    .loose(),
 });
-
-type Route = z.infer<typeof RouteSchema>;
 
 function App() {
   const getQueryParams = () => {
@@ -37,67 +35,71 @@ function App() {
       start_location: params.get('start_location') || 'Oil City',
       end_location: params.get('end_location') || 'La Push Road',
       start_date: params.get('start_date') || '',
-      end_date: params.get('end_date') || '',
       speed: parseFloat(params.get('speed') || '1.0'),
-      min_daily_distance: parseFloat(params.get('min_daily_distance') || '3.0'),
-      max_daily_distance: parseFloat(params.get('max_daily_distance') || '8.0'),
-      min_buffer: parseFloat(params.get('min_buffer') || '1.0'),
     };
   };
 
   const initialParams = getQueryParams();
 
-  // Updated Location State
-  const [start, setStart] = useState('');
-
   const [startLocation, setStartLocation] = useState(
     initialParams.start_location,
   );
   const [endLocation, setEndLocation] = useState(initialParams.end_location);
-
   const [startDate, setStartDate] = useState(initialParams.start_date);
   const [speed, setSpeed] = useState(initialParams.speed);
-  const [buffer, setBuffer] = useState(initialParams.min_buffer);
 
-  const [results, setResults] = useState<Route[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [hasSearched, setHasSearched] = useState(false);
 
-  // States for expansion
-  const [expandedOptions, setExpandedOptions] = useState<Set<number>>(
-    new Set(),
-  );
-  const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
-
+  const [mockRoute, setMockRoute] = useState<MergedRoute | null>(null);
+  const [plotResponses, setPlotResponses] = useState<PlotEntry[]>([]);
   const [rowSliderValues, setRowSliderValues] = useState<
     Record<string, number>
   >({});
   const [rowSpeedValues, setRowSpeedValues] = useState<Record<string, number>>(
     {},
   );
-  const [plotResponses, setPlotResponses] = useState<PlotEntry[]>([]);
 
   const isValidInput = startDate && startLocation && endLocation;
+  const activeRowKey = `${startLocation}-${endLocation}`;
+
+  const handlePlotRoute = async (rowKey: string, route: MergedRoute) => {
+    setError(null);
+    const departureTime =
+      rowSliderValues[rowKey] || getDefaultSliderValue(route.start_times);
+    const hikingSpeed = rowSpeedValues[rowKey] || speed;
+
+    await handlePlotRouteAPI(
+      rowKey,
+      route,
+      departureTime,
+      hikingSpeed,
+      setPlotResponses,
+    );
+  };
 
   const callAPI = async () => {
     setIsLoading(true);
     setError(null);
     setHasSearched(true);
-    setRowSliderValues({});
-    setRowSpeedValues({});
     setPlotResponses([]);
 
     try {
+      // 1. Ensure we have a valid base date string, then append 10:00 AM local time
+      // If startDate is "2026-06-17", combinedTime becomes "2026-06-17T10:00:00"
+      const combinedTime = startDate
+        ? `${startDate.split('T')[0]}T10:00:00`
+        : '';
+
       const params = new URLSearchParams();
+      params.set('start_time', combinedTime);
       params.set('start_location', startLocation);
       params.set('end_location', endLocation);
-      params.set('start_date', startDate);
       params.set('speed', speed.toString());
-      params.set('min_buffer', buffer.toString());
 
       const response = await fetch(
-        `${API_BASE_URL}/routes?${params.toString()}`,
+        `${API_BASE_URL}/plot?${params.toString()}`,
         {
           method: 'GET',
           headers: { 'Content-Type': 'application/json' },
@@ -107,24 +109,30 @@ function App() {
       if (!response.ok)
         throw new Error(`API request failed: ${response.status}`);
 
-      const data: Route[] = z.array(RouteSchema).parse(await response.json());
-      setResults(data);
+      const json = await response.json();
+      const responseData = PlotResponseSchema.parse(json);
 
-      // --- AUTO-EXPAND LOGIC ---
-      const allOptionIds = new Set<number>();
-      const allRowKeys = new Set<string>();
+      // 2. Pass this same 10:00 AM timestamp down to the dummy route framework
+      // so RoutePlotter reads 10:00 AM (600 minutes) as its initial default slider position.
+      const dummyRoute: MergedRoute = {
+        campsite_combination: 1,
+        date: startDate.split('T')[0],
+        start_location: startLocation,
+        end_location: endLocation,
+        distance: 0,
+        start_times: [{ first: combinedTime, last: combinedTime }],
+        end_times: [],
+      };
 
-      data.forEach((route) => {
-        allOptionIds.add(route.campsite_combination);
-        // Uses the deterministic key we created: Combo-Date-Location
-        allRowKeys.add(
-          `${route.campsite_combination}-${route.date}-${route.start_location}`,
-        );
-      });
+      setMockRoute(dummyRoute);
 
-      setExpandedOptions(allOptionIds);
-      setExpandedRows(allRowKeys);
-      // -------------------------
+      setPlotResponses([
+        {
+          rowKey: activeRowKey,
+          data: responseData.data,
+          layout: responseData.layout,
+        },
+      ]);
 
       window.history.pushState(
         {},
@@ -135,69 +143,20 @@ function App() {
       setError(
         err instanceof Error
           ? err.message
-          : 'An error occurred while fetching routes',
+          : 'An error occurred while fetching the plot',
       );
-      setResults([]);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const formatDate = (dateString: string) => {
-    const parts = dateString.split('-');
-    return new Date(
-      parseInt(parts[0]),
-      parseInt(parts[1]) - 1,
-      parseInt(parts[2]),
-    ).toLocaleDateString();
-  };
-
-  const formatTimeOnly = (dateTimeString: string) => {
-    return new Date(dateTimeString).toLocaleTimeString([], {
-      hour: '2-digit',
-      minute: '2-digit',
-    });
-  };
-
-  const toggleOption = (campsiteCombination: number) => {
-    setExpandedOptions((prev) => {
-      const newSet = new Set(prev);
-      if (newSet.has(campsiteCombination)) newSet.delete(campsiteCombination);
-      else newSet.add(campsiteCombination);
-      return newSet;
-    });
-  };
-
-  const toggleRow = (rowKey: string) => {
-    setExpandedRows((prev) => {
-      const newSet = new Set(prev);
-      if (newSet.has(rowKey)) newSet.delete(rowKey);
-      else newSet.add(rowKey);
-      return newSet;
-    });
-  };
-
-  const handlePlotRoute = async (rowKey: string, route: MergedRoute) => {
-    const departureTime =
-      rowSliderValues[rowKey] || getDefaultSliderValue(route.start_times);
-    const hikingSpeed = rowSpeedValues[rowKey] || speed;
-    await handlePlotRouteAPI(
-      rowKey,
-      route,
-      departureTime,
-      hikingSpeed,
-      setPlotResponses,
-    );
-  };
-
-  const getUniqueLocations = (routes: Route[]) => {
-    const locationSet = new Set<string>();
-    routes.forEach((route) => {
-      locationSet.add(route.start_location);
-      locationSet.add(route.end_location);
-    });
-    return Array.from(locationSet).slice(1, -1);
-  };
+  // NEW EFFECT: Auto-updates the graph whenever the user toggles locations or dates
+  useEffect(() => {
+    if (isValidInput) {
+      void callAPI();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [startLocation, endLocation, startDate]);
 
   const [windowSize, setWindowSize] = useState({
     width: window.innerWidth,
@@ -221,24 +180,22 @@ function App() {
       <div className='w-fit mx-auto space-y-0'>
         <div className='bg-white p-6 rounded-t-lg shadow-md text-left'>
           <div className='flex gap-6 items-start'>
-            {/* New Start and End Dropdowns */}
-            return (
-            <>
-              <StartEndDropdown
-                title='Start at'
-                onSelect={(val) => setStart(val)}
-              />
-
-              <StartEndDropdown title='End at' dependsOn={start} />
-            </>
-            );
+            <StartEndDropdown
+              title='Start at'
+              onSelect={(val) => setStartLocation(val)}
+            />
+            <StartEndDropdown
+              title='End at'
+              dependsOn={startLocation}
+              onSelect={(val) => setEndLocation(val)}
+            />
             <DatePicker date={startDate} setDate={setStartDate} />
           </div>
 
           <HikingSpeedSlider speed={speed} setSpeed={setSpeed} />
-          <TidalBufferSlider buffer={buffer} setBuffer={setBuffer} />
 
-          <div className='w-fit rounded-lg text-left'>
+          {/* Optional: Kept the button here as a manual fallback, though updates are now reactive */}
+          <div className='w-fit rounded-lg text-left mt-4'>
             <button
               onClick={() => {
                 void callAPI();
@@ -250,17 +207,13 @@ function App() {
                   : 'bg-gray-300 text-gray-500 cursor-not-allowed'
               }`}
             >
-              {isLoading ? 'Searching...' : 'Find routes'}
+              {isLoading ? 'Plotting...' : 'Analyze route'}
             </button>
           </div>
         </div>
 
         {hasSearched && (
           <div className='bg-white p-6 pt-4 rounded-b-lg shadow-md text-left'>
-            <h2 className='text-2xl font-bold text-gray-800 mb-4'>
-              Possible routes
-            </h2>
-
             {error && (
               <div className='bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4'>
                 <strong>Error:</strong> {error}
@@ -270,142 +223,26 @@ function App() {
             {isLoading && (
               <div className='text-center py-8'>
                 <div className='animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 inline-block'></div>
-                <p className='mt-2 text-gray-600'>Searching for routes...</p>
+                <p className='mt-2 text-gray-600'>Generating plot...</p>
               </div>
             )}
 
-            {!isLoading && !error && results.length > 0 && (
-              <div className='space-y-8'>
-                {Object.entries(
-                  results.reduce(
-                    (groups, route) => {
-                      const key = route.campsite_combination;
-                      if (!groups[key]) groups[key] = [];
-                      groups[key].push(route);
-                      return groups;
-                    },
-                    {} as Record<number, Route[]>,
-                  ),
-                )
-                  .sort(([a], [b]) => Number(a) - Number(b))
-                  .map(([campsiteCombination, routes], index) => {
-                    const uniqueLocations = getUniqueLocations(routes);
-                    const mergedRoutes = routes.reduce(
-                      (acc, route) => {
-                        const key = `${route.campsite_combination}-${route.date}-${route.start_location}-${route.end_location}`;
-                        if (!acc[key]) {
-                          acc[key] = {
-                            ...route,
-                            start_times: [],
-                            end_times: [],
-                          };
-                        }
-                        acc[key].start_times.push({
-                          first: route.first_possible_start,
-                          last: route.last_possible_start,
-                        });
-                        acc[key].end_times.push({
-                          first: route.first_possible_end,
-                          last: route.last_possible_end,
-                        });
-                        return acc;
-                      },
-                      {} as Record<string, MergedRoute>,
-                    );
-
-                    return (
-                      <div
-                        key={campsiteCombination}
-                        className='bg-gray-50 p-4 rounded-lg'
-                      >
-                        <div className='flex items-center gap-1 mb-2'>
-                          <button
-                            onClick={() =>
-                              toggleOption(Number(campsiteCombination))
-                            }
-                            className='w-5 h-5 text-lg font-bold text-gray-600 hover:text-gray-800 flex items-center justify-center bg-transparent'
-                          >
-                            {expandedOptions.has(Number(campsiteCombination))
-                              ? '−'
-                              : '+'}
-                          </button>
-                          <h3 className='text-xl font-semibold text-gray-800'>
-                            Option {index + 1}
-                          </h3>
-                        </div>
-
-                        <div className='mb-4'>
-                          <div className='flex items-center gap-2'>
-                            <p className='text-sm text-gray-600'>Campsites:</p>
-                            <div className='flex flex-wrap gap-2'>
-                              {uniqueLocations.map((loc, i) => (
-                                <span
-                                  key={i}
-                                  className='bg-blue-100 text-blue-800 text-sm px-2 py-1 rounded-full'
-                                >
-                                  {loc}
-                                </span>
-                              ))}
-                            </div>
-                          </div>
-                        </div>
-
-                        {expandedOptions.has(Number(campsiteCombination)) && (
-                          <div className='overflow-x-auto'>
-                            <table className='w-full bg-white text-gray-900 text-sm'>
-                              <thead>
-                                <tr className='text-left underline'>
-                                  <th className='px-4 py-2 w-8'></th>
-                                  <th className='px-4 py-2'>Date</th>
-                                  <th className='px-4 py-2'>Start Location</th>
-                                  <th className='px-4 py-2'>End Location</th>
-                                  <th className='px-4 py-2'>Distance</th>
-                                  <th className='px-4 py-2'>Start Window</th>
-                                  <th className='px-4 py-2'>End Window</th>
-                                </tr>
-                              </thead>
-                              <tbody>
-                                {Object.values(mergedRoutes).map((route) => {
-                                  const rowKey = `${route.campsite_combination}-${route.date}-${route.start_location}`;
-
-                                  return (
-                                    <Fragment key={rowKey}>
-                                      {
-                                        <tr className='bg-blue-50'>
-                                          <td className='px-4 py-3' colSpan={7}>
-                                            <RoutePlotter
-                                              rowKey={rowKey}
-                                              route={route}
-                                              speed={speed}
-                                              rowSliderValues={rowSliderValues}
-                                              rowSpeedValues={rowSpeedValues}
-                                              plotResponses={plotResponses}
-                                              setRowSliderValues={
-                                                setRowSliderValues
-                                              }
-                                              setRowSpeedValues={
-                                                setRowSpeedValues
-                                              }
-                                              onPlotRoute={(...args) => {
-                                                void handlePlotRoute(...args);
-                                              }}
-                                              getPlotDimensions={
-                                                getPlotDimensions
-                                              }
-                                            />
-                                          </td>
-                                        </tr>
-                                      }
-                                    </Fragment>
-                                  );
-                                })}
-                              </tbody>
-                            </table>
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
+            {!isLoading && !error && mockRoute && (
+              <div className='bg-gray-50 p-4 rounded-lg'>
+                <RoutePlotter
+                  rowKey={activeRowKey}
+                  route={mockRoute}
+                  speed={speed}
+                  rowSliderValues={rowSliderValues}
+                  rowSpeedValues={rowSpeedValues}
+                  plotResponses={plotResponses}
+                  setRowSliderValues={setRowSliderValues}
+                  setRowSpeedValues={setRowSpeedValues}
+                  onPlotRoute={(...args) => {
+                    void handlePlotRoute(...args);
+                  }}
+                  getPlotDimensions={getPlotDimensions}
+                />
               </div>
             )}
           </div>
