@@ -4,7 +4,6 @@ import { useEffect, useState } from 'react';
 import { z } from 'zod/v4';
 
 import DatePicker from '../components/DatePicker';
-import HikingSpeedSlider from '../components/HikingSpeedSlider';
 import RoutePlotter, {
   getDefaultSliderValue,
   handlePlotRouteAPI,
@@ -46,7 +45,7 @@ function App() {
   );
   const [endLocation, setEndLocation] = useState(initialParams.end_location);
   const [startDate, setStartDate] = useState(initialParams.start_date);
-  const [speed, setSpeed] = useState(initialParams.speed);
+  const [speed, setSpeed] = useState(initialParams.speed); // Kept the state variable intact
 
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -86,8 +85,6 @@ function App() {
     setPlotResponses([]);
 
     try {
-      // 1. Ensure we have a valid base date string, then append 10:00 AM local time
-      // If startDate is "2026-06-17", combinedTime becomes "2026-06-17T10:00:00"
       const combinedTime = startDate
         ? `${startDate.split('T')[0]}T10:00:00`
         : '';
@@ -112,8 +109,6 @@ function App() {
       const json = await response.json();
       const responseData = PlotResponseSchema.parse(json);
 
-      // 2. Pass this same 10:00 AM timestamp down to the dummy route framework
-      // so RoutePlotter reads 10:00 AM (600 minutes) as its initial default slider position.
       const dummyRoute: MergedRoute = {
         campsite_combination: 1,
         date: startDate.split('T')[0],
@@ -150,13 +145,17 @@ function App() {
     }
   };
 
-  // NEW EFFECT: Auto-updates the graph whenever the user toggles locations or dates
+  // Automated effect handles drawing, refreshing, or cleaning up the map
   useEffect(() => {
     if (isValidInput) {
       void callAPI();
+    } else {
+      setHasSearched(false);
+      setMockRoute(null);
+      setPlotResponses([]);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [startLocation, endLocation, startDate]);
+  }, [startLocation, endLocation, startDate, speed]);
 
   const [windowSize, setWindowSize] = useState({
     width: window.innerWidth,
@@ -178,11 +177,17 @@ function App() {
   return (
     <main className='min-h-screen bg-gray-100 p-8'>
       <div className='w-fit mx-auto space-y-0'>
-        <div className='bg-white p-6 rounded-t-lg shadow-md text-left'>
+        {/* Input Control Box */}
+        <div
+          className={`bg-white p-6 shadow-md text-left ${hasSearched ? 'rounded-t-lg' : 'rounded-lg'}`}
+        >
           <div className='flex gap-6 items-start'>
             <StartEndDropdown
               title='Start at'
-              onSelect={(val) => setStartLocation(val)}
+              onSelect={(val) => {
+                setStartLocation(val);
+                setEndLocation(''); // Wipes out End Location when changing Start Location
+              }}
             />
             <StartEndDropdown
               title='End at'
@@ -191,27 +196,10 @@ function App() {
             />
             <DatePicker date={startDate} setDate={setStartDate} />
           </div>
-
-          <HikingSpeedSlider speed={speed} setSpeed={setSpeed} />
-
-          {/* Optional: Kept the button here as a manual fallback, though updates are now reactive */}
-          <div className='w-fit rounded-lg text-left mt-4'>
-            <button
-              onClick={() => {
-                void callAPI();
-              }}
-              disabled={!isValidInput || isLoading}
-              className={`px-4 py-2 rounded-md font-semibold ${
-                isValidInput && !isLoading
-                  ? 'bg-blue-500 text-white hover:bg-blue-600'
-                  : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-              }`}
-            >
-              {isLoading ? 'Plotting...' : 'Analyze route'}
-            </button>
-          </div>
+          {/* HikingSpeedSlider component removed from here */}
         </div>
 
+        {/* Display Plot Data Only When Populated */}
         {hasSearched && (
           <div className='bg-white p-6 pt-4 rounded-b-lg shadow-md text-left'>
             {error && (
@@ -232,7 +220,7 @@ function App() {
                 <RoutePlotter
                   rowKey={activeRowKey}
                   route={mockRoute}
-                  speed={speed}
+                  speed={speed} // Kept so RoutePlotter can still access the initial baseline speed
                   rowSliderValues={rowSliderValues}
                   rowSpeedValues={rowSpeedValues}
                   plotResponses={plotResponses}
